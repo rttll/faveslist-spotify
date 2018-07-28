@@ -1,0 +1,132 @@
+body {
+  margin: 0 5px 0 5px;
+  font-family: "Helvetica Neue", sans-serif;
+  font-weight: 300;
+  color: #222;
+}
+
+body.ui-ready #loading {
+  display: none;
+}
+
+p, ul {
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  background: #fafafa;
+  padding: .5rem;
+}
+
+header:before, header:after {
+  display: table;
+  content: "";
+  clear: both;
+}
+
+header {
+  display: none;
+}
+
+#user-image {
+  height: 40px;
+  border-radius: 50%;
+  float: left;
+}
+
+#user-name {
+  padding: .5rem 0 0 .5rem;
+  float: left;
+}
+
+section:before, section:after {
+  display: table;
+  content: "";
+  clear: both;
+}
+
+#no-track {
+  background: rgba(243, 13, 189, 1);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#no-track p {
+  margin: auto;
+}
+
+#add-track {
+  padding: .5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  position: relative;
+}
+
+#add-track ul {
+  width: 250px;
+  float: left;
+}
+
+#add-track ul li {
+  width: 100%;
+  padding-left: .5rem;
+  list-style: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+#add-track.ready ul li {
+  cursor: default;
+}
+
+li#track-artist {
+  font-size: .8rem;
+}
+
+#track-image {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(0,0,0,0.12);
+  float:left;
+}
+
+#heart-container {
+  margin-top: 10px;
+  float: right;
+}
+
+#heart-container img {
+  width: 16px;
+  height: 16px;
+}
+
+#heart-container [data-liked] {
+  display: none;
+}
+
+#heart-container.liked [data-liked] {
+  display: block;
+}
+
+#heart-container.liked [data-unliked] {
+  display: none;
+}
+
+#heart-container [data-unliked] {
+  display: block;
+}
+
+#add-track:hover #heart-container [data-liked] {
+  display: block;
+}
+
+#add-track:hover #heart-container [data-unliked] {
+  display: none;
+}
+
