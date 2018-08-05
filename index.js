@@ -2,10 +2,10 @@
 
 const {ipcRenderer, shell} = require('electron')
 const {globalShortcut} = require('electron').remote
-//const jetpack = require("fs-jetpack");
+const jetpack = require("fs-jetpack");
 const Spotify = require('spotify-web-api-node');
 const S = new Spotify({
-  redirectUri: 'metafy://'
+  redirectUri: 'heartlist://'
 });
 
 let playlist = null,
