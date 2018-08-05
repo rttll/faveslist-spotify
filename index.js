@@ -71,7 +71,7 @@ function userJustAuthorized(code) {
       setAccess()
     },
     function(err) {
-      console.log('Something went wrong!', err);
+      console.error('userJustAuthorized', err)
     }
   );
 }
@@ -103,18 +103,17 @@ function setUser() {
       getPlaylists()
     },
     function(err) {
-      console.log('could not get user', err)
+      console.error('setUser', err)
       // Assume it expired and refresh it
       S.refreshAccessToken().then(
         function(data) {
           S.setAccessToken(data.body['access_token']);
           localStorage.setItem('accessToken', data.body['access_token'])
-          console.log('refreshed token')
           // still need to set user
           setUser()
         },
         function(err) {
-          console.log('Could not refresh access token', err);
+          console.error('refreshAccess', err);
           requestAuth();
         }
       );
@@ -146,8 +145,7 @@ function getPlaylists() {
                 showUI()
               },
               function(err) {
-                console.log('error getting tracks')
-                console.error(err);
+                console.error('getPlaylistTracks', err)
               }
             )
             break;
@@ -213,7 +211,7 @@ function getTrack(add) {
       }
     },
     function(err) {
-      errorHandler('getTrack', err)
+      console.error('getTrack', err)
     }
   )
 }
@@ -229,7 +227,7 @@ function addTrack() {
         playlist.tracks.push(id)
         updateUI()
       }, function(err) {
-        console.log('Something went wrong  - can not add track!', err);
+        console.error('addTrack', err)
       });
   } else {
     S.removeTracksFromPlaylist(user, playlist.id, [uri])
@@ -237,7 +235,7 @@ function addTrack() {
         playlist.tracks.splice(i, 1)
         updateUI()
       }, function(err) {
-        console.log('could not remove track', err)
+        console.error('removeTracks', err)
       }
     )
   }
@@ -247,15 +245,3 @@ function addTrack() {
 addTrackTrigger.addEventListener('click', () => {
   addTrack()
 })
-
-// Generic error handler
-
-function errorHandler(fn, err) {
-  console.log('/---')
-  console.log("Error in: ", fn)
-  console.log(err)
-  console.log('---/')
-  if (err.message === 'Unauthorized') {
-    requestAuth();
-  }
-}
