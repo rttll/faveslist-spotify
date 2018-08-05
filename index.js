@@ -10,8 +10,11 @@ const S = new Spotify({
 
 let playlist = null,
     playlistName = "Heartlist",
-    track, user, state,
+    track, user, state, secrets,
     scopes = ['user-read-currently-playing', 'user-read-playback-state', 'playlist-read-private', 'playlist-modify-private', 'playlist-read-collaborative', 'playlist-modify-public'];
+
+let localAccessToken = localStorage.getItem('accessToken'),
+    localRefreshToken = localStorage.getItem('refreshToken');
 
 // DOM
 const wrapper = document.getElementById('ui');
@@ -28,38 +31,34 @@ init()
 // Sets client secret & ID
 // Checks if we have access or begin process
 function init() {
-  let secrets = jetpack.read('secrets.json');
+  secrets = jetpack.read('secrets.json', 'json');
   S.setClientId(secrets['id']);
   S.setClientSecret(secrets['secret']);
-
-  if (localStorage.getItem('accessToken') && localStorage.getItem('refreshToken')) {
+  if (localAccessToken && JSON.parse(localAccessToken) !== null && localRefreshToken && JSON.parse(localRefreshToken) !== null) {
     setAccess()
-    //shell.openExternal(S.createAuthorizeURL(scopes, state))
   } else {
     requestAuth();
   }
 }
 
-// Called from main process after user authorizes
-ipcRenderer.on('authorized', (event, data) => {
-  if (data.state === state) {
-    userJustAuthorized(data.code)
-  }
-})
-
 function requestAuth() {
+
   // Make sure any old auth tokens are cleared
-  if (localStorage.getItem('accessToken') || localStorage.getItem('refreshToken')) {
+  if (localAccessToken || localRefreshToken) {
     localStorage.setItem('accessToken', null);
     localStorage.setItem('refreshToken', null)
   }
+
   // Generate random string for Spotify state
   var array = new Uint32Array(1);
   state = (window.crypto.getRandomValues(array)[0]).toString()
-  // Generate auth urls
-  let authURL = S.createAuthorizeURL(scopes, state);
-  console.log(authURL)
-  //shell.openExternal()
+
+  // Generate auth url
+  let authURL = S.createAuthorizeURL(scopes, state)
+  if (!authURL.indexOf('client_id') > -1) {
+    authURL += "&client_id=" + secrets['id']
+  }
+  shell.openExternal(authURL)
 }
 
 // Callback for ipcRenderer authorized listener
@@ -84,6 +83,14 @@ function setAccess() {
   S.setRefreshToken(localStorage.getItem('refreshToken'));
   setUser()
 }
+
+// Called from main process after user authorizes
+ipcRenderer.on('authorized', (event, data) => {
+  if (data.state === state) {
+    userJustAuthorized(data.code)
+  }
+})
+
 
 // Sets user, then continues to playlist setup
 function setUser() {
