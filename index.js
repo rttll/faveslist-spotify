@@ -34,7 +34,7 @@ function init() {
   secrets = jetpack.read('secrets.json', 'json');
   S.setClientId(secrets['id']);
   S.setClientSecret(secrets['secret']);
-  if (localAccessToken && JSON.parse(localAccessToken) !== null && localRefreshToken && JSON.parse(localRefreshToken) !== null) {
+  if (localAccessToken !== null && localRefreshToken !== null) {
     setAccess()
   } else {
     requestAuth();
@@ -45,8 +45,8 @@ function requestAuth() {
 
   // Make sure any old auth tokens are cleared
   if (localAccessToken || localRefreshToken) {
-    localStorage.setItem('accessToken', null);
-    localStorage.setItem('refreshToken', null)
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
   }
 
   // Generate random string for Spotify state
