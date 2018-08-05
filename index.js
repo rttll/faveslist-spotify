@@ -53,9 +53,13 @@ function requestAuth() {
     localStorage.setItem('accessToken', null);
     localStorage.setItem('refreshToken', null)
   }
+  // Generate random string for Spotify state
   var array = new Uint32Array(1);
   state = (window.crypto.getRandomValues(array)[0]).toString()
-  shell.openExternal(S.createAuthorizeURL(scopes, state))
+  // Generate auth urls
+  let authURL = S.createAuthorizeURL(scopes, state);
+  console.log(authURL)
+  //shell.openExternal()
 }
 
 // Callback for ipcRenderer authorized listener
@@ -202,8 +206,7 @@ function getTrack(add) {
       }
     },
     function(err) {
-      console.log('could not get track')
-      console.error(err)
+      errorHandler('getTrack', err)
     }
   )
 }
@@ -237,3 +240,15 @@ function addTrack() {
 addTrackTrigger.addEventListener('click', () => {
   addTrack()
 })
+
+// Generic error handler
+
+function errorHandler(fn, err) {
+  console.log('/---')
+  console.log("Error in: ", fn)
+  console.log(err)
+  console.log('---/')
+  if (err.message === 'Unauthorized') {
+    requestAuth();
+  }
+}
