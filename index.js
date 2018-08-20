@@ -1,3 +1,11 @@
+// TODO
+// Check if need to refresh before getting track
+// Parse accessSetAt as date
+// Save action when getting track
+// and only set user once, and not rely on it to continue
+// with setting up playlist
+
+
 'use strict'
 
 const {ipcRenderer, shell} = require('electron')
@@ -8,13 +16,20 @@ const S = new Spotify({
   redirectUri: 'heartlist://'
 });
 
-let playlist = null,
-    playlistName = "Heartlist",
-    track, user, state, secrets,
+// Feature
+let playlistName = "Heartlist",
+    playlist = null,
+    track = null;
+
+// Auth
+let user = localStorage.getItem('user'),
+    state = "",
+    secrets = {},
     scopes = ['user-read-currently-playing', 'user-read-playback-state', 'playlist-read-private', 'playlist-modify-private', 'playlist-read-collaborative', 'playlist-modify-public'];
 
-let localAccessToken = localStorage.getItem('accessToken'),
-    localRefreshToken = localStorage.getItem('refreshToken');
+// Action in progress.
+let gettingTrack = false,
+    addingTrack = false;
 
 // DOM
 const wrapper = document.getElementById('ui');
@@ -34,31 +49,27 @@ function init() {
   secrets = jetpack.read('secrets.json', 'json');
   S.setClientId(secrets['id']);
   S.setClientSecret(secrets['secret']);
-  if (localAccessToken !== null && localRefreshToken !== null) {
-    setAccess()
+  console.log(secrets)
+  if (localStorage.getItem('refreshToken') != null) {
+    refreshAccess();
   } else {
     requestAuth();
   }
 }
 
 function requestAuth() {
-
   // Make sure any old auth tokens are cleared
-  if (localAccessToken || localRefreshToken) {
-    localStorage.removeItem('accessToken');
+/*
+  if (localStorage.getItem('refreshToken') != null) {
     localStorage.removeItem('refreshToken');
   }
-
+*/
   // Generate random string for Spotify state
   var array = new Uint32Array(1);
   state = (window.crypto.getRandomValues(array)[0]).toString()
 
-  // Generate auth url
-  let authURL = S.createAuthorizeURL(scopes, state)
-  if (!authURL.indexOf('client_id') > -1) {
-    authURL += "&client_id=" + secrets['id']
-  }
-  shell.openExternal(authURL)
+  // Open browser and request auth from user.
+  shell.openExternal(S.createAuthorizeURL(scopes, state))
 }
 
 // Callback for ipcRenderer authorized listener
@@ -66,9 +77,7 @@ function requestAuth() {
 function userJustAuthorized(code) {
   S.authorizationCodeGrant(code).then(
     function(data) {
-      localStorage.setItem('accessToken', data.body['access_token'])
-      localStorage.setItem('refreshToken', data.body['refresh_token'])
-      setAccess()
+      setAccess({access: data.body['access_token'], refresh: data.body['refresh_token']})
     },
     function(err) {
       console.error('userJustAuthorized', err)
@@ -76,12 +85,49 @@ function userJustAuthorized(code) {
   );
 }
 
-// Set access & refresh tokens
-// Called either from init() or from userJustAuthorized()
-function setAccess() {
-  S.setAccessToken(localStorage.getItem('accessToken'));
-  S.setRefreshToken(localStorage.getItem('refreshToken'));
-  setUser()
+// Set access & refresh tokens.
+function setAccess(data) {
+  if (typeof data.access === 'string') {
+    // Set access
+    S.setAccessToken(data.access);
+    // Save time set
+    localStorage.setItem('access', Date.now())
+  }
+  if (typeof data.refresh === 'string') {
+    console.log('setting refresh')
+    // Set and save
+    S.setRefreshToken(data.refesh);
+    localStorage.setItem('refreshToken', data.refresh);
+  }
+
+  // On initial setup, set user
+  // setUser() will then set playlist
+  if (user === null) {
+    setUser();
+  } else {
+    setPlaylist();
+  }
+
+
+  // Continue
+  if (gettingTrack) {
+    getTrack();
+  }
+}
+
+function refreshAccess() {
+  console.log('refreshAccess', localStorage)
+  S.refreshAccessToken().then(
+    function(data) {
+      console.log('refreshed access', data)
+      setAccess({access: data.body['access_token']});
+    },
+    function(err) {
+      // If can't refresh, assume we lost authorization.
+      console.error('refreshAccess', err);
+      requestAuth();
+    }
+  );
 }
 
 // Called from main process after user authorizes
@@ -91,38 +137,27 @@ ipcRenderer.on('authorized', (event, data) => {
   }
 })
 
-
 // Sets user, then continues to playlist setup
 function setUser() {
-  // Always request user, as a way to check if access token needs to be refreshed
   S.getMe().then(
     function(data) {
+      // Set user
       user = data.body.id
-      document.getElementById('user-name').textContent = data.body.display_name
-      document.getElementById('user-image').setAttribute('src', data.body.images[0].url)
-      getPlaylists()
+      // Save user for later use
+      localStorage.setItem('user', data.body.id)
+      // Continue to get Playlist
+      setPlaylist();
     },
     function(err) {
       console.error('setUser', err)
       // Assume it expired and refresh it
-      S.refreshAccessToken().then(
-        function(data) {
-          S.setAccessToken(data.body['access_token']);
-          localStorage.setItem('accessToken', data.body['access_token'])
-          // still need to set user
-          setUser()
-        },
-        function(err) {
-          console.error('refreshAccess', err);
-          requestAuth();
-        }
-      );
+      refreshAccess();
     }
   );
 }
 
 // Get playlist
-function getPlaylists() {
+function setPlaylist() {
   let attempts = 3;
   for (let i = 0; i < attempts; i++) {
     if (playlist !== null) {
@@ -132,22 +167,14 @@ function getPlaylists() {
       function(data) {
         for (let item of data.body.items) {
           if (item.name === playlistName) {
+            // Set playlist
             playlist = item;
+            // Set the shortcut
             globalShortcut.register('CommandOrControl+Shift+K', () => {
-              getTrack(true);
+              addTrack();
             })
-            S.getPlaylistTracks(user, item.id).then(
-              function(data) {
-                playlist.tracks = [];
-                for (var v of data.body.items) {
-                  playlist.tracks.push(v.track.id)
-                }
-                showUI()
-              },
-              function(err) {
-                console.error('getPlaylistTracks', err)
-              }
-            )
+            // Get updated tracks
+            getUpdatedTracks();
             break;
           }
         }
@@ -158,7 +185,24 @@ function getPlaylists() {
       }
     )
   }
+}
 
+// Get tracks from playlist
+// For checking against current playing track
+// to avoid adding dupes.
+function getUpdatedTracks() {
+  S.getPlaylistTracks(user, playlist.id).then(
+    function(data) {
+      playlist.tracks = [];
+      for (var v of data.body.items) {
+        playlist.tracks.push(v.track.id)
+      }
+      showUI()
+    },
+    function(err) {
+      console.error('getPlaylistTracks', err)
+    }
+  )
 }
 
 // Show UI when app is ready
@@ -178,66 +222,68 @@ function updateUI() {
 // Called from main process when window toggled
 ipcRenderer.on('window-toggled', (event, data) => {
   if (data === 'open') {
-    getTrack(false)
+    getTrack();
   }
 })
 
 // Get current playing track, then display
-function getTrack(add) {
-  S.getMyCurrentPlayingTrack(user)
-  .then(
-    function(data) {
-      if (Object.keys(data.body).length === 0 && data.body.constructor === Object) {
-        // no track playing
-        //noTrackMsg.style.display = 'flex';
-        trackName.textContent = "Silence..."
-      } else {
-        //noTrackMsg.style.display = 'none';
-
-        let artists = []
-        track = data.body.item
-        for (var v of track.artists) {
-          artists.push(v.name)
-        }
-        trackArtist.textContent = artists.join(', ')
-        trackName.textContent = track.name
-        trackImage.src = track.album.images[0].url
-        addTrackTrigger.classList.add('ready')
-        if (add) {
-          addTrack()
+function getTrack() {
+  // check if need to refresh
+  let time = parseInt(localStorage.getItem('access'));
+  if ( (time + (60*60*1000)) < Date.now() ) {
+    console.log('getTrack, need to refresh')
+    gettingTrack = true;
+    refreshAccess();
+  } else {
+    S.getMyCurrentPlayingTrack(user)
+    .then(
+      function(data) {
+        if (Object.keys(data.body).length === 0 && data.body.constructor === Object) {
+          // no track playing
+          //noTrackMsg.style.display = 'flex';
+          trackName.textContent = "Silence..."
         } else {
+          gettingTrack = false;
+          let artists = []
+          track = data.body.item
+          for (var v of track.artists) {
+            artists.push(v.name)
+          }
+          trackArtist.textContent = artists.join(', ')
+          trackName.textContent = track.name
+          trackImage.src = track.album.images[0].url
+          addTrackTrigger.classList.add('ready')
           updateUI()
+          if (addingTrack) {
+            addTrack();
+          }
         }
+      },
+      function(err) {
+        console.error('getTrack', err)
       }
-    },
-    function(err) {
-      console.error('getTrack', err)
-    }
-  )
+    )
+  }
 }
 
 // Add/remove current playing track if it's not already in playlist
 function addTrack() {
-  let uri = track.uri
-  let id = uri.split(':')[2]
-  let i = playlist.tracks.indexOf(id)
-  if (i < 0) {
-    S.addTracksToPlaylist(user, playlist.id, [uri])
+  // Always get track before adding
+  if (!addingTrack) {
+    addingTrack = true;
+    getTrack()
+  } else {
+    let id = track.uri.split(':')[2];
+    if (playlist.tracks.indexOf(id) < 0) {
+      S.addTracksToPlaylist(user, playlist.id, [track.uri])
       .then(function(data) {
+        addingTrack = false;
         playlist.tracks.push(id)
         updateUI()
       }, function(err) {
         console.error('addTrack', err)
       });
-  } else {
-    S.removeTracksFromPlaylist(user, playlist.id, [uri])
-      .then(function(data) {
-        playlist.tracks.splice(i, 1)
-        updateUI()
-      }, function(err) {
-        console.error('removeTracks', err)
-      }
-    )
+    }
   }
 }
 
