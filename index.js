@@ -310,7 +310,7 @@ function makePlaylist() {
     for (var i = 0; i < data.body.items.length; i++) {
       library.push(data.body.items[i].track.id)
     }
-    if (c < 4) {
+    if (c < 100) {
       console.log('Fetched ' + library.length + ' total tracks.')
       c++
       makePlaylist();
@@ -322,29 +322,36 @@ function makePlaylist() {
   });
 }
 
-let forNew = []
+let selectedTracks = [];
+let tempLibrary = library;
 
 function getTrackFeatures() {
-  console.log('getting features')
-  S.getAudioFeaturesForTracks(library).then(
-    function(data) {
-      //console.log(data)
-      for (var i = 0; i < data.body.audio_features.length; i++) {
-        if (data.body.audio_features[i].acousticness > .9) {
-          forNew.push(data.body.audio_features[i].uri)
+  let size = 100;
+  console.log('libary is ' + tempLibrary.length)
+  for (var i = 0; i < tempLibrary.length; i ++ ) {
+    console.log('getting features for ' + size*i)
+    let batch = tempLibrary.splice(0, size)
+    S.getAudioFeaturesForTracks(batch).then(
+      function(data) {
+        let tracks = data.body.audio_features;
+        for (var i = 0; i < tracks.length; i++) {
+          console.log(tracks[i])
+          if (tracks[i].acousticness > .7 && tracks[i].valence > .6) {
+            console.log(i + ' is acoustic!')
+            selectedTracks.push(tracks[i].uri)
+          }
         }
+      }, function(err) {
+        console.error(err)
       }
-      console.log('making playlist')
-      S.createPlaylist(user, '100% Acoustic', { public : false }).then(
-        function(data) {
-          console.log('adding tracks')
-          S.addTracksToPlaylist(user, data.body.id, forNew).then(
-            function() {
-              console.log('done!')
-            }, function(err) {
-              console.error(err)
-            }
-          )
+    )
+  }
+  console.log('making playlist')
+  S.createPlaylist(user, '100% Acoustic', { public : false }).then(
+    function(data) {
+      S.addTracksToPlaylist(user, data.body.id, selectedTracks).then(
+        function() {
+          console.log('done!')
         }, function(err) {
           console.error(err)
         }
@@ -353,18 +360,16 @@ function getTrackFeatures() {
       console.error(err)
     }
   )
-/*
-  for (var i = 0; i < library.length; i++) {
-    if (i == 0) {
-      S.getTrack(library[i]).then(
-        function(data) {
-          console.log(data)
-        }, function() {
 
-        }
-      )
+}
+
+function addTracks() {
+  console.log('adding tracks')
+  S.addTracksToPlaylist(user, data.body.id, selectedTracks).then(
+    function() {
+      console.log('done!')
+    }, function(err) {
+      console.error(err)
     }
-  }
-*/
-
+  )
 }
