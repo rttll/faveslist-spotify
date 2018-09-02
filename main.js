@@ -23,7 +23,7 @@ app.on('open-url', function (event, url) {
 
 function init() {
   // Tray
-  image = nativeImage.createFromPath(`${__dirname}/assets/images/heart.png`)
+  image = nativeImage.createFromPath(`${__dirname}/assets/images/heartlist-black.png`)
   image.setTemplateImage(true);
   tray = new Tray(image)
   tray.on('click', function() {
