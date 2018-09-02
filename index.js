@@ -202,6 +202,7 @@ function updateHeartStatusInUI() {
 
 }
 
+// Get track when window is opened.
 // Called from main process when window toggled
 ipcRenderer.on('window-toggled', (event, data) => {
   if (data === 'open') {
@@ -266,12 +267,15 @@ function addTrack() {
         addingTrack = false;
         playlist.tracks.push(id)
         updateHeartStatusInUI()
+        // Send request to main process to open window
+        ipcRenderer.send('open-window')
       }, function(err) {
         console.error('addTrack', err)
       });
     }
   }
 }
+
 
 // Dom event listeners
 addTrackTrigger.addEventListener('click', () => {

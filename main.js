@@ -48,10 +48,13 @@ function init() {
     win = null
   })
 }
+
 const toggleWindow = () => {
   if (win.isVisible()) {
     win.hide()
   } else {
+    // This will call getTrack()
+    win.webContents.send('window-toggled', 'open')
     showWindow()
   }
 }
@@ -71,7 +74,10 @@ const showWindow = () => {
   win.setPosition(x, y, false)
   win.show()
   win.focus()
-  win.webContents.send('window-toggled', 'open')
 }
 
+// Listen for requests to open window
+ipcMain.on('open-window', (event, arg) => {
+  showWindow()
+})
 
