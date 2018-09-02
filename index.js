@@ -11,7 +11,15 @@ const S = new Spotify({
 let user = localStorage.getItem('user'),
     state = "",
     secrets = {},
-    scopes = ['user-read-currently-playing', 'user-read-playback-state', 'playlist-read-private', 'playlist-modify-private', 'playlist-read-collaborative', 'playlist-modify-public'];
+    scopes = [
+      'user-read-currently-playing',
+      'user-read-playback-state',
+      'user-library-read',
+      'playlist-read-private',
+      'playlist-read-collaborative',
+      'playlist-modify-private',
+      'playlist-modify-public'
+    ];
 
 let playlistName = "Heartlist",
     playlist = null,
@@ -93,6 +101,10 @@ function setAccess(data) {
   if (gettingTrack) {
     getTrack();
   }
+
+  // make playlist
+  makePlaylist();
+
 }
 
 function refreshAccess() {
@@ -281,3 +293,78 @@ function addTrack() {
 addTrackTrigger.addEventListener('click', () => {
   addTrack()
 })
+
+/*
+  Playlist maker
+*/
+
+let library = [];
+let c = 0;
+
+function makePlaylist() {
+  S.getMySavedTracks({
+    limit : 20,
+    offset: c*20
+  })
+  .then(function(data) {
+    for (var i = 0; i < data.body.items.length; i++) {
+      library.push(data.body.items[i].track.id)
+    }
+    if (c < 4) {
+      console.log('Fetched ' + library.length + ' total tracks.')
+      c++
+      makePlaylist();
+    } else {
+      getTrackFeatures();
+    }
+  }, function(err) {
+    console.log('Something went wrong!', err);
+  });
+}
+
+let forNew = []
+
+function getTrackFeatures() {
+  console.log('getting features')
+  S.getAudioFeaturesForTracks(library).then(
+    function(data) {
+      //console.log(data)
+      for (var i = 0; i < data.body.audio_features.length; i++) {
+        if (data.body.audio_features[i].acousticness > .9) {
+          forNew.push(data.body.audio_features[i].uri)
+        }
+      }
+      console.log('making playlist')
+      S.createPlaylist(user, '100% Acoustic', { public : false }).then(
+        function(data) {
+          console.log('adding tracks')
+          S.addTracksToPlaylist(user, data.body.id, forNew).then(
+            function() {
+              console.log('done!')
+            }, function(err) {
+              console.error(err)
+            }
+          )
+        }, function(err) {
+          console.error(err)
+        }
+      )
+    }, function(err) {
+      console.error(err)
+    }
+  )
+/*
+  for (var i = 0; i < library.length; i++) {
+    if (i == 0) {
+      S.getTrack(library[i]).then(
+        function(data) {
+          console.log(data)
+        }, function() {
+
+        }
+      )
+    }
+  }
+*/
+
+}
