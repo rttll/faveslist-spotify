@@ -2,17 +2,12 @@
 
 const {app, BrowserWindow, Tray, nativeImage, ipcMain, globalShortcut, shell, protocol} = require('electron')
 const path = require('path')
-let tray
-let win
-
-//https://beta.developer.spotify.com/dashboard/applications/dfeed83a84d445d7b1a36ecc23eb5ac5
-//https://www.spotify.com/us/account/apps/
-
+let tray, win, image
 
 app.on('ready', () => {
   init();
-  app.setAsDefaultProtocolClient('metafy')
-  //console.log('checking', app.isDefaultProtocolClient('metafy'))
+  app.setAsDefaultProtocolClient('heartlist')
+  //console.log('checking', app.isDefaultProtocolClient('heartlist'))
 })
 
 // Protocol handler for osx
@@ -45,7 +40,7 @@ function init() {
   })
 
   win.loadURL(`file://${__dirname}/index.html`)
-  //win.webContents.openDevTools()
+  win.webContents.openDevTools()
   win.on('blur', () => {
     win.hide()
   })
@@ -53,10 +48,13 @@ function init() {
     win = null
   })
 }
+
 const toggleWindow = () => {
   if (win.isVisible()) {
     win.hide()
   } else {
+    // This will call getTrack()
+    win.webContents.send('window-toggled', 'open')
     showWindow()
   }
 }
@@ -76,7 +74,10 @@ const showWindow = () => {
   win.setPosition(x, y, false)
   win.show()
   win.focus()
-  win.webContents.send('window-toggled', 'open')
 }
 
+// Listen for requests to open window
+ipcMain.on('open-window', (event, arg) => {
+  showWindow()
+})
 
