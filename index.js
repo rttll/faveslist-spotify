@@ -1,11 +1,3 @@
-// TODO
-// Check if need to refresh before getting track
-// Parse accessSetAt as date
-// Save action when getting track
-// and only set user once, and not rely on it to continue
-// with setting up playlist
-
-
 'use strict'
 
 const {ipcRenderer, shell} = require('electron')
@@ -16,18 +8,15 @@ const S = new Spotify({
   redirectUri: 'heartlist://'
 });
 
-// Feature
-let playlistName = "Heartlist",
-    playlist = null,
-    track = null;
-
-// Auth
 let user = localStorage.getItem('user'),
     state = "",
     secrets = {},
     scopes = ['user-read-currently-playing', 'user-read-playback-state', 'playlist-read-private', 'playlist-modify-private', 'playlist-read-collaborative', 'playlist-modify-public'];
 
-// Action in progress.
+let playlistName = "Heartlist",
+    playlist = null,
+    track = null;
+
 let gettingTrack = false,
     addingTrack = false;
 
@@ -49,21 +38,15 @@ function init() {
   secrets = jetpack.read('secrets.json', 'json');
   S.setClientId(secrets['id']);
   S.setClientSecret(secrets['secret']);
-  console.log(secrets)
   if (localStorage.getItem('refreshToken') != null) {
     refreshAccess();
   } else {
+    console.log('init - calling req auth')
     requestAuth();
   }
 }
 
 function requestAuth() {
-  // Make sure any old auth tokens are cleared
-/*
-  if (localStorage.getItem('refreshToken') != null) {
-    localStorage.removeItem('refreshToken');
-  }
-*/
   // Generate random string for Spotify state
   var array = new Uint32Array(1);
   state = (window.crypto.getRandomValues(array)[0]).toString()
@@ -88,43 +71,43 @@ function userJustAuthorized(code) {
 // Set access & refresh tokens.
 function setAccess(data) {
   if (typeof data.access === 'string') {
-    // Set access
     S.setAccessToken(data.access);
     // Save time set
     localStorage.setItem('access', Date.now())
   }
   if (typeof data.refresh === 'string') {
-    console.log('setting refresh')
     // Set and save
     S.setRefreshToken(data.refesh);
     localStorage.setItem('refreshToken', data.refresh);
   }
 
-  // On initial setup, set user
-  // setUser() will then set playlist
+  // On initial setup, set user, which will then set playlist
   if (user === null) {
     setUser();
   } else {
     setPlaylist();
   }
 
-
-  // Continue
+  // If getting a track was interrupted and we needed
+  // to refresh access.
   if (gettingTrack) {
     getTrack();
   }
 }
 
 function refreshAccess() {
-  console.log('refreshAccess', localStorage)
+  S.setRefreshToken(localStorage.refreshToken);
   S.refreshAccessToken().then(
     function(data) {
-      console.log('refreshed access', data)
-      setAccess({access: data.body['access_token']});
+      let params = {access: data.body['access_token']}
+      // Docs said sometimes we'll get a new refresh token
+      if (typeof data.body['refesh_token'] != 'undefined') {
+        params['refresh'] = data.body['refesh_token']
+      }
+      setAccess(params)
     },
     function(err) {
       // If can't refresh, assume we lost authorization.
-      console.error('refreshAccess', err);
       requestAuth();
     }
   );
@@ -210,7 +193,7 @@ function showUI() {
   document.getElementsByTagName('body')[0].classList.add('ui-ready')
 }
 
-function updateUI() {
+function updateHeartStatusInUI() {
   if (playlist.tracks.indexOf(track.id) > -1) {
     heart.classList.add('liked')
   } else {
@@ -231,7 +214,6 @@ function getTrack() {
   // check if need to refresh
   let time = parseInt(localStorage.getItem('access'));
   if ( (time + (60*60*1000)) < Date.now() ) {
-    console.log('getTrack, need to refresh')
     gettingTrack = true;
     refreshAccess();
   } else {
@@ -239,13 +221,12 @@ function getTrack() {
     .then(
       function(data) {
         if (Object.keys(data.body).length === 0 && data.body.constructor === Object) {
-          // no track playing
-          //noTrackMsg.style.display = 'flex';
+          // TODO: better way to indicate error. UI is confusing
           trackName.textContent = "Silence..."
         } else {
           gettingTrack = false;
-          let artists = []
           track = data.body.item
+          let artists = []
           for (var v of track.artists) {
             artists.push(v.name)
           }
@@ -253,7 +234,7 @@ function getTrack() {
           trackName.textContent = track.name
           trackImage.src = track.album.images[0].url
           addTrackTrigger.classList.add('ready')
-          updateUI()
+          updateHeartStatusInUI()
           if (addingTrack) {
             addTrack();
           }
@@ -266,10 +247,15 @@ function getTrack() {
   }
 }
 
-// Add/remove current playing track if it's not already in playlist
+// Add current playing track
 function addTrack() {
-  // Always get track before adding
+  // Always get track before adding, to insure we heart actual current playing track.
+
+  // addingTrack is always false at first
   if (!addingTrack) {
+    // then we set it to true and get the track
+    // getTrack() calls addTrack again
+    // and then addingTrack is true, and all this gets skipped.
     addingTrack = true;
     getTrack()
   } else {
@@ -279,7 +265,7 @@ function addTrack() {
       .then(function(data) {
         addingTrack = false;
         playlist.tracks.push(id)
-        updateUI()
+        updateHeartStatusInUI()
       }, function(err) {
         console.error('addTrack', err)
       });
