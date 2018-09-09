@@ -20,14 +20,16 @@ let playlistName = "Heartlist",
 let gettingTrack = false,
     addingTrack = false;
 
+let trackTimeout;
+
 // DOM
-const wrapper = document.getElementById('ui');
-const noTrackMsg = document.getElementById('no-track');
+const container = document.getElementsByTagName('main')[0]
 const addTrackTrigger = document.getElementById('add-track')
 const heart = document.getElementById('heart-container')
 const trackName = document.getElementById('track-name')
 const trackArtist = document.getElementById('track-artist')
 const trackImage = document.getElementById('track-image')
+const errText = document.getElementById('error');
 
 // Init
 init()
@@ -180,7 +182,6 @@ function getUpdatedTracks() {
       for (var v of data.body.items) {
         playlist.tracks.push(v.track.id)
       }
-      showUI()
     },
     function(err) {
       console.error('getPlaylistTracks', err)
@@ -188,12 +189,28 @@ function getUpdatedTracks() {
   )
 }
 
-// Show UI when app is ready
-function showUI() {
-  document.getElementsByTagName('body')[0].classList.add('ui-ready')
+function noTrackFound() {
+  errText.textContent = "No song found. "
 }
 
-function updateHeartStatusInUI() {
+function clearUI() {
+  trackArtist.textContent = '';
+  trackName.textContent = ''
+  trackImage.src = ''
+  container.classList.add('loading')
+  errText.textContent = ''
+}
+
+function updateHeartStatusInUI(track) {
+  let artists = []
+  for (var v of track.artists) {
+    artists.push(v.name)
+  }
+  errText.textContent = ''
+  container.classList.remove('loading')
+  trackArtist.textContent = artists.join(', ')
+  trackName.textContent = track.name
+  trackImage.src = track.album.images[0].url
   if (playlist.tracks.indexOf(track.id) > -1) {
     heart.classList.add('liked')
   } else {
@@ -212,6 +229,7 @@ ipcRenderer.on('window-toggled', (event, data) => {
 
 // Get current playing track, then display
 function getTrack() {
+  clearUI();
   // check if need to refresh
   let time = parseInt(localStorage.getItem('access'));
   if ( (time + (60*60*1000)) < Date.now() ) {
@@ -222,20 +240,10 @@ function getTrack() {
     .then(
       function(data) {
         if (Object.keys(data.body).length === 0 && data.body.constructor === Object) {
-          // TODO: better way to indicate error. UI is confusing
-          trackName.textContent = "Silence..."
+          noTrackFound();
         } else {
           gettingTrack = false;
-          track = data.body.item
-          let artists = []
-          for (var v of track.artists) {
-            artists.push(v.name)
-          }
-          trackArtist.textContent = artists.join(', ')
-          trackName.textContent = track.name
-          trackImage.src = track.album.images[0].url
-          addTrackTrigger.classList.add('ready')
-          updateHeartStatusInUI()
+          updateHeartStatusInUI(data.body.item)
           if (addingTrack) {
             addTrack();
           }
@@ -243,6 +251,9 @@ function getTrack() {
       },
       function(err) {
         console.error('getTrack', err)
+        // Try again
+        gettingTrack = true;
+        refreshAccess();
       }
     )
   }

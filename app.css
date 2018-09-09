@@ -130,3 +130,35 @@ li#track-artist {
   display: none;
 }
 
+/* loading gradient */
+
+.loading img#track-image, .loading:before, .loading:after {
+  background: repeating-linear-gradient(to right, white 0%, #f1f1f1 50%, white 100%);
+  background-size: 200% auto;
+  background-position: 0 100%;
+  animation: gradient 2s infinite;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+.loading:before, .loading:after {
+  content: "";
+  width: 267px;
+  height: 11px;
+  position: absolute;
+  top: 17px;
+  left: 62px;
+}
+
+.loading:after {
+  top: 36px;
+}
+
+.loading #heart-container {
+  opacity: 0;
+}
+
+@keyframes gradient {
+  0%   { background-position: 0 0; }
+  100% { background-position: -200% 0; }
+}
