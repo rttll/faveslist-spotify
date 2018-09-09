@@ -34,7 +34,7 @@ function init() {
   win = new BrowserWindow({
     width: 350,
     height: 140,
-    show: false,
+    show: true,
     frame: false,
     transparent: true
   })
