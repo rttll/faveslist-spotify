@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' api.spotify.com; connect-src 'self' https://*.spotify.com; img-src 'self' https://*.scdn.co https://*.fbcdn.net; style-src 'self';">
+	<title>Settings</title>
+  <link rel="stylesheet" href="assets/css/base.css" />
+</head>
+<body>
+  <main>
+    <div>
+      <div id="saved" class="alert">Setting Saved</div>
+      <label for="">Playlist Name</label>
+      <br />
+      <input type="text" id="playlist-name" value="" />
+      <div>
+        <button id="save-settings">Save</button>
+      </div>
+      <div>
+        <br />
+        <br />
+        <button id="done">Done</button>
+      </div>
+    </div>
+  </main>
+<script src="./settings.js"></script>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 const {app, BrowserWindow, Tray, nativeImage, ipcMain, globalShortcut, shell, protocol} = require('electron')
 const path = require('path')
-let tray, win, image
+let tray, win, authWin, settingsWin, image
 
 app.on('ready', () => {
   init();
@@ -10,10 +10,10 @@ app.on('ready', () => {
   //console.log('checking', app.isDefaultProtocolClient('heartlist'))
 })
 
-// Protocol handler for osx
+// After authorized
 app.on('open-url', function (event, url) {
   event.preventDefault()
-  win.webContents.send('authorized',
+  authWin.webContents.send('authorized',
     {
       code: url.split('&')[0].split('=')[1],
       state: url.split('&')[1].split('=')[1]
@@ -30,17 +30,47 @@ function init() {
     toggleWindow()
   })
 
+  // Auth win
+  authWin = new BrowserWindow({
+    width: 300,
+    height: 450,
+    show: false
+  })
+
+  authWin.loadURL(`file://${__dirname}/auth.html`)
+  authWin.on('blur', () => {
+    authWin.hide()
+  })
+  authWin.on('closed', () => {
+    authWin = null
+  })
+
+  // Settings window
+  settingsWin = new BrowserWindow({
+    width: 300,
+    height: 450,
+    show: false
+  })
+
+  settingsWin.loadURL(`file://${__dirname}/settings.html`)
+  settingsWin.on('blur', () => {
+    settingsWin.hide()
+  })
+  settingsWin.on('closed', () => {
+    settingsWin = null
+  })
+
   // Main window
   win = new BrowserWindow({
     width: 350,
     height: 140,
-    show: true,
+    show: false,
     frame: false,
     transparent: true
   })
 
   win.loadURL(`file://${__dirname}/index.html`)
-  win.webContents.openDevTools()
+  //win.webContents.openDevTools()
   win.on('blur', () => {
     win.hide()
   })
@@ -78,6 +108,25 @@ const showWindow = () => {
 
 // Listen for requests to open window
 ipcMain.on('open-window', (event, arg) => {
-  showWindow()
+  toggleWindow()
 })
 
+// Called from auth window, need to
+ipcMain.on('request-auth', (event, arg) => {
+  authWin.show()
+  authWin.focus()
+  //authWin.webContents.openDevTools()
+})
+
+// Auth complete
+ipcMain.on('initial-auth-complete', (event, arg) => {
+  settingsWin.show()
+  settingsWin.focus()
+  settingsWin.webContents.send('initial-auth-complete');
+})
+
+// Settings saved
+ipcMain.on('done-with-settings', (e, arg) => {
+  settingsWin.hide()
+  win.webContents.send('done-with-settings', 'open')
+})

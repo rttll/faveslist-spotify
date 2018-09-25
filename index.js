@@ -4,16 +4,14 @@ const {ipcRenderer, shell} = require('electron')
 const {globalShortcut} = require('electron').remote
 const jetpack = require("fs-jetpack");
 const Spotify = require('spotify-web-api-node');
-const S = new Spotify({
-  redirectUri: 'heartlist://'
-});
+const S = new Spotify({redirectUri: 'heartlist://'});
 
 let user = localStorage.getItem('user'),
     state = "",
     secrets = {},
     scopes = ['user-read-currently-playing', 'user-read-playback-state', 'playlist-read-private', 'playlist-modify-private', 'playlist-read-collaborative', 'playlist-modify-public'];
 
-let playlistName = "Heartlist",
+let playlistName,
     playlist = null,
     track = null;
 
@@ -37,37 +35,22 @@ init()
 // Sets client secret & ID
 // Checks if we have access or begin process
 function init() {
-  secrets = jetpack.read('secrets.json', 'json');
-  S.setClientId(secrets['id']);
-  S.setClientSecret(secrets['secret']);
-  if (localStorage.getItem('refreshToken') != null) {
-    refreshAccess();
+  if (localStorage.getItem('accessToken') === null) {
+    ipcRenderer.send('request-auth')
   } else {
-    console.log('init - calling req auth')
-    requestAuth();
+    getSettings();
   }
 }
 
-function requestAuth() {
-  // Generate random string for Spotify state
-  var array = new Uint32Array(1);
-  state = (window.crypto.getRandomValues(array)[0]).toString()
+ipcRenderer.on('done-with-settings', (event, data) => {
+  getSettings();
+})
 
-  // Open browser and request auth from user.
-  shell.openExternal(S.createAuthorizeURL(scopes, state))
-}
-
-// Callback for ipcRenderer authorized listener
-// This is only when user first opens app and authorizes
-function userJustAuthorized(code) {
-  S.authorizationCodeGrant(code).then(
-    function(data) {
-      setAccess({access: data.body['access_token'], refresh: data.body['refresh_token']})
-    },
-    function(err) {
-      console.error('userJustAuthorized', err)
-    }
-  );
+function getSettings() {
+  user = localStorage.getItem('user');
+  playlistName = localStorage.getItem('playlistName');
+  playlist = JSON.parse(localStorage.getItem('playlist'));
+  setAccess({access: localStorage.getItem('accessToken'), refresh: localStorage.getItem('refresh')})
 }
 
 // Set access & refresh tokens.
@@ -84,17 +67,11 @@ function setAccess(data) {
   }
 
   // On initial setup, set user, which will then set playlist
-  if (user === null) {
-    setUser();
-  } else {
-    setPlaylist();
-  }
+  if (playlist === null) getPlaylist();
 
   // If getting a track was interrupted and we needed
   // to refresh access.
-  if (gettingTrack) {
-    getTrack();
-  }
+  if (gettingTrack) getTrack();
 }
 
 function refreshAccess() {
@@ -115,34 +92,8 @@ function refreshAccess() {
   );
 }
 
-// Called from main process after user authorizes
-ipcRenderer.on('authorized', (event, data) => {
-  if (data.state === state) {
-    userJustAuthorized(data.code)
-  }
-})
-
-// Sets user, then continues to playlist setup
-function setUser() {
-  S.getMe().then(
-    function(data) {
-      // Set user
-      user = data.body.id
-      // Save user for later use
-      localStorage.setItem('user', data.body.id)
-      // Continue to get Playlist
-      setPlaylist();
-    },
-    function(err) {
-      console.error('setUser', err)
-      // Assume it expired and refresh it
-      refreshAccess();
-    }
-  );
-}
-
 // Get playlist
-function setPlaylist() {
+function getPlaylist() {
   let attempts = 3;
   for (let i = 0; i < attempts; i++) {
     if (playlist !== null) {
@@ -211,7 +162,8 @@ function updateHeartStatusInUI(track) {
   trackArtist.textContent = artists.join(', ')
   trackName.textContent = track.name
   trackImage.src = track.album.images[0].url
-  if (playlist.tracks.indexOf(track.id) > -1) {
+  console.log(playlist)
+  if (playlist.tracks.items.indexOf(track.id) > -1) {
     heart.classList.add('liked')
   } else {
     heart.classList.remove('liked')
@@ -239,6 +191,7 @@ function getTrack() {
     S.getMyCurrentPlayingTrack(user)
     .then(
       function(data) {
+        //console.log(data)
         if (Object.keys(data.body).length === 0 && data.body.constructor === Object) {
           noTrackFound();
         } else {

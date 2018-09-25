@@ -1,0 +1,7 @@
+.alert {
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid gray;
+  border-radius: 3px;
+  display: none;
+}
