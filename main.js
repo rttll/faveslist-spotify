@@ -5,20 +5,15 @@ const path = require('path')
 let tray, win, image
 
 app.on('ready', () => {
-  init();
-  app.setAsDefaultProtocolClient('heartlist')
-  //console.log('checking', app.isDefaultProtocolClient('heartlist'))
+  // let lockSingle = app.requestSingleInstanceLock() // fix the second instance issue. 
+  let protocol = app.setAsDefaultProtocolClient('heartlist')
+  if (protocol) init();
 })
 
 // Protocol handler for osx
 app.on('open-url', function (event, url) {
   event.preventDefault()
-  win.webContents.send('authorized',
-    {
-      code: url.split('&')[0].split('=')[1],
-      state: url.split('&')[1].split('=')[1]
-    }
-  )
+  win.webContents.send('authorized', url)
 })
 
 function init() {
@@ -36,7 +31,10 @@ function init() {
     height: 140,
     show: true,
     frame: false,
-    transparent: true
+    transparent: true,
+    webPreferences: {
+      nodeIntegration: true
+    }
   })
 
   win.loadURL(`file://${__dirname}/index.html`)

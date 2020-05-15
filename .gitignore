@@ -3,3 +3,5 @@ dist/*
 .DS_Store
 secrets.json
 node_modules/*
+
+.env
