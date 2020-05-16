@@ -26,20 +26,12 @@ const errText = document.getElementById('error');
 
 const Spotify = require('./spotify')
 
-authorize()
 
-
-function authorize() {
-  Spotify.authorize()
-  
-  // if (localStorage.getItem('refreshToken') != null) {
-  //   refreshAccess();
-  // } else {
-  //   console.log('init - calling req auth', Spotify)
-  //   Spotify.requestAuth();
-  // }
+// Init
+// localStorage.removeItem('heartlist')
+if (localStorage.getItem('heartlist') == null) {
+  ipcRenderer.send('show-user-auth-window')
 }
-
 
 // Sets user, then continues to playlist setup
 function setUser() {

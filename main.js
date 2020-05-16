@@ -2,18 +2,12 @@
 
 const {app, BrowserWindow, Tray, nativeImage, ipcMain, globalShortcut, shell, protocol} = require('electron')
 const path = require('path')
-let tray, win, image
+let tray, win, authWin, image
 
 app.on('ready', () => {
   // let lockSingle = app.requestSingleInstanceLock() // fix the second instance issue. 
   let protocol = app.setAsDefaultProtocolClient('heartlist')
   if (protocol) init();
-})
-
-// Protocol handler for osx
-app.on('open-url', function (event, url) {
-  event.preventDefault()
-  win.webContents.send('authorized', url)
 })
 
 function init() {
@@ -38,13 +32,29 @@ function init() {
   })
 
   win.loadURL(`file://${__dirname}/index.html`)
-  win.webContents.openDevTools()
+  // win.webContents.openDevTools()
   win.on('blur', () => {
     win.hide()
   })
   win.on('closed', () => {
     win = null
   })
+
+  authWin = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+
+  authWin.on('blur', () => {
+    // authWin.hide()
+  })
+
+  authWin.on('closed', () => {
+    authWin = null
+  })
+
 }
 
 const toggleWindow = () => {
@@ -74,8 +84,29 @@ const showWindow = () => {
   win.focus()
 }
 
+function showUserAuthWindow() {
+  authWin.loadURL(`file://${__dirname}/auth.html`)
+  authWin.webContents.openDevTools()
+  authWin.show()
+}
+
+
 // Listen for requests to open window
 ipcMain.on('open-window', (event, arg) => {
   showWindow()
 })
 
+ipcMain.on('show-user-auth-window', () => {
+  showUserAuthWindow()
+})
+
+ipcMain.on('launch-clicked', () => {
+  authWin.close()
+})
+
+app.on('open-url', function (event, url) {
+  event.preventDefault()
+  // authWin.close()
+  console.log('authorized')
+  authWin.webContents.send('authorized', url)
+})
