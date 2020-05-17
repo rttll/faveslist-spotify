@@ -32,15 +32,19 @@ function init() {
   })
 
   win.loadURL(`file://${__dirname}/index.html`)
-  // win.webContents.openDevTools()
+  win.webContents.openDevTools({
+    mode: 'detach'
+  })
   win.on('blur', () => {
-    win.hide()
+    // win.hide()
   })
   win.on('closed', () => {
     win = null
   })
 
   authWin = new BrowserWindow({
+    width: 1300,
+    height: 800,
     show: false,
     webPreferences: {
       nodeIntegration: true
