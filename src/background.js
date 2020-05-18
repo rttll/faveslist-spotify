@@ -25,6 +25,10 @@ const setApplicationMenu = () => {
 };
 
 const setProtocol = () => {
+  console.log(process.execPath)
+  const gotTheLock = app.requestSingleInstanceLock()
+  // console.log(gotTheLock)
+  // console.log(process.execPath)
   app.setAsDefaultProtocolClient('heartlist')
 }
 
@@ -146,4 +150,8 @@ app.on('open-url', function (event, url) {
   // authWin.close()
   console.log('authorized')
   authWindow.webContents.send('authorized', url)
+})
+
+app.on('second-instance', (event, argv, cwd) => {
+  console.log('secon')
 })
