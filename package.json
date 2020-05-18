@@ -18,6 +18,12 @@
     "directories": {
       "buildResources": "resources"
     },
+    "protocols": {
+      "name": "heartlist",
+      "schemes": [
+        "heartlist"
+      ]
+    },    
     "publish": null
   },
   "scripts": {
