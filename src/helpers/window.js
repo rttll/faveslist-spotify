@@ -79,6 +79,7 @@ export default (name, options) => {
   win = new BrowserWindow(Object.assign({}, options, state));
 
   win.on("close", saveState);
+  win.on("blue", () => {win.hide()})
 
   return win;
 };

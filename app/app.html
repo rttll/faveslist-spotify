@@ -1,27 +1,32 @@
-<!doctype html>
-<html>
+<!DOCTYPE HTML>
+<html lang="en-US">
 <head>
-  <meta charset="utf-8">
-  <title>Electron Boilerplate</title>
+	<meta charset="UTF-8">
+	<!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' api.spotify.com; connect-src 'self' https://*.spotify.com; img-src 'self' https://*.scdn.co https://*.fbcdn.net; style-src 'self';"> -->
+	<title>Heartlist</title>
+  <!-- <link rel="stylesheet" href="app.css" /> -->
 </head>
 <body>
-
-  <div id="app" class="container" style="display: none;">
-    <h1 id="greet"></h1>
-    <p>
-      Welcome to <a href="https://www.electronjs.org/" class="js-external-link">Electron</a> app running on this <strong id="os"></strong> machine.
-    </p>
-    <p>
-      App author: <strong id="author"></strong>
-    </p>
-    <p>
-      Environment: <strong id="env"></strong>
-    </p>
-    <p>
-      Electron version: <strong id="electron-version"></strong>
-    </p>
-  </div>
-
+  <main>
+    <header>
+      <div id="user-box">
+        <img src="" alt="" id="user-image" />
+        <p id="user-name"></p>
+      </div>
+    </header>
+    <section id="add-track">
+      <img src="" alt="" id="track-image" />
+      <div id="heart-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 825.73 755.65"><g id="heart" data-name="Layer 2"><g id="main"><path d="M755.64,412.85c93.75-94.73,93.45-247.51-.9-341.86h0c-94.35-94.35-247.13-94.65-341.86-.9l0,0v0C318.12-23.66,165.34-23.36,71,71h0c-94.35,94.35-94.65,247.13-.9,341.86h0L412.86,755.65,754.74,413.78h0l.91-.92Z" style="fill:#0d0709"/></g></g></svg>
+      </div>
+      <ul>
+        <li id="track-name"></li>
+        <li id="track-artist"></li>
+      </ul>
+    </section>
+    <p id="error"></p>
+  </main>
   <script src="app.js"></script>
+
 </body>
 </html>

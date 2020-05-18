@@ -5,7 +5,7 @@
 
 import path from "path";
 import url from "url";
-import { app, Menu } from "electron";
+import { app, Menu, BrowserWindow, Tray, nativeImage, ipcMain, globalShortcut, shell, protocol} from 'electron';
 import { devMenuTemplate } from "./menu/dev_menu_template";
 import { editMenuTemplate } from "./menu/edit_menu_template";
 import createWindow from "./helpers/window";
@@ -13,6 +13,8 @@ import createWindow from "./helpers/window";
 // Special module holding environment variables which you declared
 // in config/env_xxx.json file.
 import env from "env";
+
+let mainWindow, authWindow, tray, image;
 
 const setApplicationMenu = () => {
   const menus = [editMenuTemplate];
@@ -22,9 +24,37 @@ const setApplicationMenu = () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menus));
 };
 
-// Save userData in separate folders for each environment.
-// Thanks to this you can use production and development versions of the app
-// on same machine like those are two separate apps.
+const setProtocol = () => {
+  app.setAsDefaultProtocolClient('heartlist')
+}
+
+const toggleWindow = () => {
+  if (mainWindow.isVisible()) {
+    mainWindow.hide()
+  } else {
+    // This will call getTrack()
+    mainWindow.webContents.send('window-toggled', 'open')
+    showWindow()
+  }
+}
+
+const showWindow = () => {
+  const trayPos = tray.getBounds()
+  const winPos = mainWindow.getBounds()
+  let x, y = 0
+  if (process.platform == 'darwin') {
+    x = Math.round(trayPos.x + (trayPos.width / 2) - (trayPos.width / 2) - 5)
+    y = Math.round(trayPos.y + trayPos.height)
+  } else {
+    x = Math.round(trayPos.x + (trayPos.width / 2) - (winPos.width / 2))
+    y = Math.round(trayPos.y + trayPos.height * 10)
+  }
+
+  mainWindow.setPosition(x, y, false)
+  mainWindow.show()
+  mainWindow.focus()
+}
+
 if (env.name !== "production") {
   const userDataPath = app.getPath("userData");
   app.setPath("userData", `${userDataPath} (${env.name})`);
@@ -32,10 +62,22 @@ if (env.name !== "production") {
 
 app.on("ready", () => {
   setApplicationMenu();
+  setProtocol();
 
-  const mainWindow = createWindow("main", {
-    width: 1000,
-    height: 600,
+  // Tray
+  image = nativeImage.createFromPath(`${__dirname}/heart.png`)
+  image.isMacTemplateImage = true
+  tray = new Tray(image)
+  tray.on('click', function() {
+    toggleWindow()
+  })
+
+  mainWindow = createWindow("main", {
+    width: 350,
+    height: 140,
+    show: false,
+    frame: false,
+    transparent: true,
     webPreferences: {
       nodeIntegration: true
     }
@@ -49,11 +91,59 @@ app.on("ready", () => {
     })
   );
 
-  // if (env.name === "development") {
-  // }
-  mainWindow.openDevTools();
+  if (env.name === "development") {
+    // mainWindow.openDevTools({mode: 'detach'});
+  }
+
+  authWindow = createWindow('auth', {
+    width: 1300,
+    height: 800,
+    show: false,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+
+
 });
 
 app.on("window-all-closed", () => {
   app.quit();
 });
+
+
+function showUserAuthWindow() {
+  authWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, "auth.html"),
+      protocol: "file:",
+      slashes: true
+    })
+  );
+
+  if (env.name === "development") {
+    // authWindow.openDevTools({mode: 'detach'});
+  }
+  authWindow.show()
+}
+
+
+// Listen for requests to open window
+ipcMain.on('open-window', (event, arg) => {
+  showWindow()
+})
+
+ipcMain.on('show-user-auth-window', () => {
+  showUserAuthWindow()
+})
+
+ipcMain.on('launch-clicked', () => {
+  authWindow.close()
+})
+
+app.on('open-url', function (event, url) {
+  event.preventDefault()
+  // authWin.close()
+  console.log('authorized')
+  authWindow.webContents.send('authorized', url)
+})
