@@ -14,7 +14,7 @@ authRequest.defaults.headers.common['Authorization'] = authHeader
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
 
 const apiRequest = axios.create({
-  baseURL: 'https://api.spotify.com/'
+  baseURL: 'https://api.spotify.com/v1/'
 })
 
 const config = {
@@ -78,7 +78,6 @@ function api(options) {
 
 module.exports = {
   init: () => {
-    console.log(process.execPath)
     for (let k in config) {
       let stored = localStorage.getItem(k)
       if (stored !== null) {
@@ -132,7 +131,7 @@ module.exports = {
   },
   setUser: async () => {
     let options = {
-      url: 'v1/me'
+      url: 'me'
     }
     let request = await api(options)
     config.user = request.data
@@ -151,6 +150,7 @@ module.exports = {
       }
     }
     let playlist = await api(options)
+    debugger
     config.playlist = playlist
     localStorage.setItem('playlist', JSON.stringify(playlist))
     return playlist
@@ -158,7 +158,7 @@ module.exports = {
   },
   getPlaylistTracks: () => {
     let options = {
-      url: `v1/playlists/${config.playlist.id}/tracks`
+      url: `playlists/${config.playlist.id}/tracks`
     }
     let tracks = api(optoins)
 
@@ -175,12 +175,12 @@ module.exports = {
     return track
   },
   player: async () => {
-    let request = await api({url: 'v1/me/player'})
+    let request = await api({url: 'me/player'})
     return request.data
   },
   currentlyPlaying: async () => {
     // apiRequest.defaults.headers.common['Authorization'] = `Bearer 1234`
-    let request = await api({url: 'v1/me/player/currently-playing'})
+    let request = await api({url: 'me/player/currently-playing'})
     return request.data    
   }
 }

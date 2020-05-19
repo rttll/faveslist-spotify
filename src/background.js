@@ -24,14 +24,6 @@ const setApplicationMenu = () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menus));
 };
 
-const setProtocol = () => {
-  console.log(process.execPath)
-  const gotTheLock = app.requestSingleInstanceLock()
-  // console.log(gotTheLock)
-  // console.log(process.execPath)
-  app.setAsDefaultProtocolClient('heartlist')
-}
-
 const toggleWindow = () => {
   if (mainWindow.isVisible()) {
     mainWindow.hide()
@@ -65,8 +57,10 @@ if (env.name !== "production") {
 }
 
 app.on("ready", () => {
+
   setApplicationMenu();
-  setProtocol();
+
+  app.setAsDefaultProtocolClient('heartlist')
 
   // Tray
   image = nativeImage.createFromPath(`${__dirname}/heart.png`)
@@ -108,6 +102,7 @@ app.on("ready", () => {
     }
   })
 
+  showUserAuthWindow()
 
 });
 
@@ -138,6 +133,7 @@ ipcMain.on('open-window', (event, arg) => {
 })
 
 ipcMain.on('show-user-auth-window', () => {
+  console.log('hh')
   showUserAuthWindow()
 })
 

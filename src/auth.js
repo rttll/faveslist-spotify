@@ -37,11 +37,31 @@ function launchClicked() {
   ipcRenderer.send('launch-clicked')
 }
 
-async function savePlaylist() {
-  let playlist = await Spotify.setPlaylist(document.getElementById('playlist-name').value)
+import { h, render, Component, createRef } from 'preact';
+
+class App extends Component {
+  state = { 
+    playlist: {
+      name: 'foo'
+    }
+  }
+  
+  playlistInput = createRef();
+
+  savePlaylist = async () => {
+    let playlist = await Spotify.setPlaylist(this.playlistInput.current.value)
+    debugger
+  }
+
+  render() {
+    return (
+      <div>
+        <input type="text" ref={this.playlistInput} value={this.state.playlist.name} />
+        <button onClick={this.savePlaylist}>Click</button>
+
+      </div>
+    );
+  }
 }
 
-document.getElementById('authorize').addEventListener('click', initAuthorization)
-// initAuthorization()
-document.getElementById('launch').addEventListener('click', launchClicked)
-document.getElementById('save-playlist-name').addEventListener('click', savePlaylist)
+render(<App />, document.getElementById('app'));

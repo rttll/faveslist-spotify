@@ -24,10 +24,16 @@ let config, playing;
 
 init()
 
-async function init() {
+const showAuthWindow = () => {
   if (localStorage.getItem('tokens') === null) {
     ipcRenderer.send('show-user-auth-window')
   }  
+  ipcRenderer.send('show-user-auth-window')
+}
+
+async function init() {
+  showAuthWindow()
+
   config = Spotify.init()
   playing = await Spotify.currentlyPlaying()
   // let player = await Spotify.player()

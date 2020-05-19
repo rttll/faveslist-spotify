@@ -90,8 +90,14 @@
 /*!*********************!*\
   !*** ./src/auth.js ***!
   \*********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ "preact");
+/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 const {
   ipcRenderer,
@@ -135,14 +141,39 @@ function launchClicked() {
   ipcRenderer.send('launch-clicked');
 }
 
-async function savePlaylist() {
-  let playlist = await Spotify.setPlaylist(document.getElementById('playlist-name').value);
+
+
+class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
+  constructor(...args) {
+    super(...args);
+
+    _defineProperty(this, "state", {
+      playlist: {
+        name: 'foo'
+      }
+    });
+
+    _defineProperty(this, "playlistInput", Object(preact__WEBPACK_IMPORTED_MODULE_0__["createRef"])());
+
+    _defineProperty(this, "savePlaylist", async () => {
+      let playlist = await Spotify.setPlaylist(this.playlistInput.current.value);
+      debugger;
+    });
+  }
+
+  render() {
+    return Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("input", {
+      type: "text",
+      ref: this.playlistInput,
+      value: this.state.playlist.name
+    }), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
+      onClick: this.savePlaylist
+    }, "Click"));
+  }
+
 }
 
-document.getElementById('authorize').addEventListener('click', initAuthorization); // initAuthorization()
-
-document.getElementById('launch').addEventListener('click', launchClicked);
-document.getElementById('save-playlist-name').addEventListener('click', savePlaylist);
+Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(App, null), document.getElementById('app'));
 
 /***/ }),
 
@@ -172,7 +203,7 @@ const authHeader = 'Basic ' + new Buffer.from(process.env.CLIENT_ID + ':' + proc
 authRequest.defaults.headers.common['Authorization'] = authHeader;
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
 const apiRequest = axios.create({
-  baseURL: 'https://api.spotify.com/'
+  baseURL: 'https://api.spotify.com/v1/'
 });
 const config = {
   tokens: null,
@@ -234,8 +265,6 @@ function api(options) {
 
 module.exports = {
   init: () => {
-    console.log(process.execPath);
-
     for (let k in config) {
       let stored = localStorage.getItem(k);
 
@@ -285,7 +314,7 @@ module.exports = {
   },
   setUser: async () => {
     let options = {
-      url: 'v1/me'
+      url: 'me'
     };
     let request = await api(options);
     config.user = request.data;
@@ -303,13 +332,14 @@ module.exports = {
       }
     };
     let playlist = await api(options);
+    debugger;
     config.playlist = playlist;
     localStorage.setItem('playlist', JSON.stringify(playlist));
     return playlist;
   },
   getPlaylistTracks: () => {
     let options = {
-      url: `v1/playlists/${config.playlist.id}/tracks`
+      url: `playlists/${config.playlist.id}/tracks`
     };
     let tracks = api(optoins);
   },
@@ -326,14 +356,14 @@ module.exports = {
   },
   player: async () => {
     let request = await api({
-      url: 'v1/me/player'
+      url: 'me/player'
     });
     return request.data;
   },
   currentlyPlaying: async () => {
     // apiRequest.defaults.headers.common['Authorization'] = `Bearer 1234`
     let request = await api({
-      url: 'v1/me/player/currently-playing'
+      url: 'me/player/currently-playing'
     });
     return request.data;
   }
@@ -371,6 +401,17 @@ module.exports = require("dotenv");
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
+
+/***/ }),
+
+/***/ "preact":
+/*!*************************!*\
+  !*** external "preact" ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("preact");
 
 /***/ }),
 
