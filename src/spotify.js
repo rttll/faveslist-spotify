@@ -1,6 +1,9 @@
 const {ipcRenderer, shell} = require('electron')
 const qs = require('qs');
 const axios = require('axios')
+const Store = require('electron-store');
+const store = new Store();
+
 require('dotenv').config()
 
 const redirectUri = 'heartlist://'
@@ -58,7 +61,6 @@ function api(options) {
           }),
           url: 'api/token'
         };
-        debugger
         authRequest(request).then(function(resp) {
           if (resp.status === 200) {
             module.exports.setTokens(resp.data)
@@ -68,7 +70,7 @@ function api(options) {
             // show auth / start screen
           }
         }).catch((err) => {
-          debugger
+          console.log('api err - could not refresh token?', err)
         })
     }
     return err
@@ -89,6 +91,8 @@ module.exports = {
     } else {
       module.exports.setTokens(config.tokens)
     }
+
+    config.rand = store.get('foo')
     return config
   },
   authorize: function (state) {
@@ -121,7 +125,6 @@ module.exports = {
       url: 'api/token'
     };
     let request = await authRequest(options)
-    debugger
     return request.data
   },
   setTokens: (tokens) => {
@@ -150,7 +153,6 @@ module.exports = {
       }
     }
     let playlist = await api(options)
-    debugger
     config.playlist = playlist
     localStorage.setItem('playlist', JSON.stringify(playlist))
     return playlist

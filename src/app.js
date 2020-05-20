@@ -9,6 +9,7 @@ import "./helpers/external_links.js";
 const {ipcRenderer, shell} = require('electron')
 const {globalShortcut} = require('electron').remote
 
+
 // DOM
 const container = document.getElementsByTagName('main')[0]
 const addTrackTrigger = document.getElementById('add-track')
@@ -22,7 +23,9 @@ const Spotify = require('./spotify.js')
 
 let config, playing;
 
-init()
+ipcRenderer.on('app-init', () => {
+  init()
+})
 
 const showAuthWindow = () => {
   if (localStorage.getItem('tokens') === null) {
@@ -35,11 +38,12 @@ async function init() {
   showAuthWindow()
 
   config = Spotify.init()
-  playing = await Spotify.currentlyPlaying()
+  console.log(config.rand)
+  // playing = await Spotify.currentlyPlaying()
   // let player = await Spotify.player()
-  console.log(playing)
+  // console.log(playing)
 
-  if (playing.length > 0) updateUI()
+  // if (playing.length > 0) updateUI()
 
 }
 

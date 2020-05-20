@@ -5,7 +5,7 @@
 
 import path from "path";
 import url from "url";
-import { app, Menu, BrowserWindow, Tray, nativeImage, ipcMain, globalShortcut, shell, protocol} from 'electron';
+import { app, Menu, BrowserWindow, Tray, nativeImage, ipcMain, globalShortcut, shell, protocol, ipcRenderer} from 'electron';
 import { devMenuTemplate } from "./menu/dev_menu_template";
 import { editMenuTemplate } from "./menu/edit_menu_template";
 import createWindow from "./helpers/window";
@@ -73,7 +73,7 @@ app.on("ready", () => {
   mainWindow = createWindow("main", {
     width: 350,
     height: 140,
-    show: false,
+    show: true,
     frame: false,
     transparent: true,
     webPreferences: {
@@ -88,6 +88,10 @@ app.on("ready", () => {
       slashes: true
     })
   );
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('app-init')
+  })
 
   if (env.name === "development") {
     // mainWindow.openDevTools({mode: 'detach'});
@@ -120,10 +124,14 @@ function showUserAuthWindow() {
     })
   );
 
-  if (env.name === "development") {
-    // authWindow.openDevTools({mode: 'detach'});
+  if (env.name === "development" || true) {
+    authWindow.openDevTools()//{mode: 'detach'});
   }
   authWindow.show()
+  authWindow.webContents.on('did-finish-load', () => {
+    authWindow.webContents.send('foo')
+  })
+  
 }
 
 
@@ -133,7 +141,6 @@ ipcMain.on('open-window', (event, arg) => {
 })
 
 ipcMain.on('show-user-auth-window', () => {
-  console.log('hh')
   showUserAuthWindow()
 })
 
