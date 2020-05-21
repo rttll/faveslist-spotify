@@ -498,44 +498,42 @@ module.exports = function (list, options) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _stylesheets_app_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./stylesheets/app.css */ "./src/stylesheets/app.css");
-/* harmony import */ var _stylesheets_app_css__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_stylesheets_app_css__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! preact */ "preact");
-/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _components_App__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/App */ "./src/components/App.js");
+/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ "preact");
+/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _stylesheets_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./stylesheets/app.css */ "./src/stylesheets/app.css");
+/* harmony import */ var _stylesheets_app_css__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_stylesheets_app_css__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _components_Auth__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/Auth */ "./src/components/Auth.js");
 const {
   ipcRenderer,
   shell
 } = __webpack_require__(/*! electron */ "electron");
 
-const Spotify = __webpack_require__(/*! ./spotify */ "./src/spotify.js"); // todo handle security
+const Spotify = __webpack_require__(/*! ./services/spotify */ "./src/services/spotify.js");
 
 
 
 
-
-let appComponent, state, tokens;
-Spotify.init();
+let AuthMethods;
 ipcRenderer.on('authorized', (event, data) => {
   let params = new URLSearchParams(data.split('?').pop());
-  appComponent.spotifyWasAuthorized(params);
+  AuthMethods.spotifyWasAuthorized(params);
 });
 
 function launchClicked() {
   ipcRenderer.send('launch-clicked');
 }
 
-Object(preact__WEBPACK_IMPORTED_MODULE_1__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_1__["h"])(_components_App__WEBPACK_IMPORTED_MODULE_2__["default"], {
+Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(_components_Auth__WEBPACK_IMPORTED_MODULE_2__["default"], {
   Spotify: Spotify,
-  ref: app => appComponent = app
+  ref: app => AuthMethods = app
 }), document.getElementById('app'));
 
 /***/ }),
 
-/***/ "./src/components/App.js":
-/*!*******************************!*\
-  !*** ./src/components/App.js ***!
-  \*******************************/
+/***/ "./src/components/Auth.js":
+/*!********************************!*\
+  !*** ./src/components/Auth.js ***!
+  \********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -544,7 +542,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return App; });
 /* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ "preact");
 /* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! electron */ "electron");
+/* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(electron__WEBPACK_IMPORTED_MODULE_1__);
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
@@ -554,7 +555,7 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
     _defineProperty(this, "state", {
       spotifyState: null,
       playlist: {
-        name: 'foo'
+        name: null
       }
     });
 
@@ -574,10 +575,17 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
       this.props.Spotify.getTokens(authCode).then(tokens => {
         this.props.Spotify.setTokens(tokens);
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
+          prop: 'tokens',
+          value: tokens
+        });
       }).then(() => {
         return this.props.Spotify.setUser();
-      }).then(() => {
-        document.getElementById('message').textContent = 'success!';
+      }).then(user => {
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
+          prop: 'user',
+          value: user
+        }); // document.getElementById('message').textContent = 'success!'
       }).catch(err => {
         console.log(err);
       });
@@ -587,7 +595,10 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
     _defineProperty(this, "savePlaylist", async () => {
       let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value);
-      debugger;
+      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
+        prop: 'playlist',
+        value: playlist
+      });
     });
   }
 
@@ -597,14 +608,19 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
   render() {
     return Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      class: "p-4"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
       class: ""
-    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
-      onClick: this.authorize
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
+      onClick: this.authorize,
+      class: "p-2 border"
     }, "Authorize!"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("br", null), " ", Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("br", null)), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("input", {
       type: "text",
       ref: this.playlistInput,
-      value: this.state.playlist.name
+      value: this.state.playlist.name,
+      class: "p-4 border rounded"
     }), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
+      class: "p-4 rounded border",
       onClick: this.savePlaylist
     }, "Click"));
   }
@@ -613,10 +629,10 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
 /***/ }),
 
-/***/ "./src/spotify.js":
-/*!************************!*\
-  !*** ./src/spotify.js ***!
-  \************************/
+/***/ "./src/services/spotify.js":
+/*!*********************************!*\
+  !*** ./src/services/spotify.js ***!
+  \*********************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -628,10 +644,6 @@ const {
 const qs = __webpack_require__(/*! qs */ "qs");
 
 const axios = __webpack_require__(/*! axios */ "axios");
-
-const Store = __webpack_require__(/*! electron-store */ "electron-store");
-
-const store = new Store();
 
 __webpack_require__(/*! dotenv */ "dotenv").config();
 
@@ -645,18 +657,6 @@ authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-ur
 const apiRequest = axios.create({
   baseURL: 'https://api.spotify.com/v1/'
 });
-const config = {
-  tokens: null,
-  user: null,
-  playlist: null
-}; // axios.interceptors.request.use(function (config) {
-//   debugger
-//   return config
-// }, function (error) {
-//   // Do something with request error
-//   return Promise.reject(error);
-// });
-
 let currentRequestOptions;
 
 function api(options) {
@@ -678,11 +678,12 @@ function api(options) {
     }
 
     if (message === 'Invalid access token' || message === 'The access token expired') {
+      let refreshToken = ipcRenderer.invoke('getConfig', 'tokens.refresh_token');
       let request = {
         method: 'POST',
         data: qs.stringify({
           'grant_type': 'refresh_token',
-          'refresh_token': config.tokens.refresh_token
+          'refresh_token': refreshToken
         }),
         url: 'api/token'
       };
@@ -704,20 +705,9 @@ function api(options) {
 
 module.exports = {
   init: () => {
-    for (let k in config) {
-      let stored = localStorage.getItem(k);
-
-      if (stored !== null) {
-        config[k] = JSON.parse(stored);
-      }
-    }
-
-    if (config.tokens === null) {} else {
-      module.exports.setTokens(config.tokens);
-    }
-
-    config.rand = store.get('foo');
-    return config;
+    ipcRenderer.invoke('getConfig', 'tokens').then(tokens => {
+      module.exports.setTokens(tokens);
+    }).catch(err => {});
   },
   authorize: function (state) {
     const scope = ['user-read-currently-playing', 'user-read-playback-state', 'playlist-modify-private', 'playlist-modify-public', 'playlist-read-private', 'playlist-read-collaborative'].join(' ');
@@ -745,25 +735,20 @@ module.exports = {
     return request.data;
   },
   setTokens: tokens => {
-    config.tokens = { ...config.tokens,
-      ...tokens
-    };
-    apiRequest.defaults.headers.common['Authorization'] = `Bearer ${config.tokens.access_token}`;
-    localStorage.setItem('tokens', JSON.stringify(config.tokens));
+    apiRequest.defaults.headers.common['Authorization'] = `Bearer ${tokens.access_token}`;
   },
   setUser: async () => {
     let options = {
       url: 'me'
     };
     let request = await api(options);
-    config.user = request.data;
-    localStorage.setItem('user', JSON.stringify(config.user));
-    return config.user;
+    return request.data;
   },
   setPlaylist: async name => {
     if (name.length < 1) name = 'Heartlist';
+    let userID = await ipcRenderer.invoke('getConfig', 'user.id');
     let options = {
-      url: `users/${config.user.id}/playlists`,
+      url: `users/${userID}/playlists`,
       method: 'POST',
       data: {
         name: name,
@@ -771,15 +756,13 @@ module.exports = {
       }
     };
     let playlist = await api(options);
-    config.playlist = playlist;
-    localStorage.setItem('playlist', JSON.stringify(playlist));
-    return playlist;
+    return playlist.data;
   },
   getPlaylistTracks: () => {
     let options = {
       url: `playlists/${config.playlist.id}/tracks`
     };
-    let tracks = api(optoins);
+    let tracks = api(options);
   },
   addTrack: uri => {
     let options = {
@@ -868,17 +851,6 @@ module.exports = require("dotenv");
 /***/ (function(module, exports) {
 
 module.exports = require("electron");
-
-/***/ }),
-
-/***/ "electron-store":
-/*!*********************************!*\
-  !*** external "electron-store" ***!
-  \*********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = require("electron-store");
 
 /***/ }),
 

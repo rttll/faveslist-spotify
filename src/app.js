@@ -19,7 +19,7 @@ const trackArtist = document.getElementById('track-artist')
 const trackImage = document.getElementById('track-image')
 const errText = document.getElementById('error');
 
-const Spotify = require('./spotify.js')
+const Spotify = require('./services/spotify.js')
 
 let config, playing;
 
@@ -37,8 +37,7 @@ const showAuthWindow = () => {
 async function init() {
   showAuthWindow()
 
-  config = Spotify.init()
-  console.log(config.rand)
+  // config = Spotify.init()
   // playing = await Spotify.currentlyPlaying()
   // let player = await Spotify.player()
   // console.log(playing)
@@ -89,38 +88,3 @@ window.addEventListener('contextmenu', (e) => {
   rightClickPosition = {x: e.x, y: e.y}
   menu.popup(remote.getCurrentWindow())
 }, false)
-
-// preact
-
-import { h, render, Component } from 'preact';
-
-class App extends Component {
-  // Add `name` to the initial state
-  state = { value: '', name: 'world' }
-
-  onInput = ev => {
-    this.setState({ value: ev.target.value });
-  }
-
-  // Add a submit handler that updates the `name` with the latest input value
-  onSubmit = ev => {
-    // Prevent default browser behavior (aka don't submit the form here)
-    ev.preventDefault();
-
-    this.setState({ name: this.state.value });
-  }
-
-  render() {
-    return (
-      <div>
-        <h1>Hello, {this.state.name}!</h1>
-        <form onSubmit={this.onSubmit}>
-          <input type="text" value={this.state.value} onInput={this.onInput} />
-          <button type="submit">Update</button>
-        </form>
-      </div>
-    );
-  }
-}
-
-// render(<App />, document.body);

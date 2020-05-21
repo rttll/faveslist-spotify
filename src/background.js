@@ -10,11 +10,12 @@ import { devMenuTemplate } from "./menu/dev_menu_template";
 import { editMenuTemplate } from "./menu/edit_menu_template";
 import createWindow from "./helpers/window";
 
+
 // Special module holding environment variables which you declared
 // in config/env_xxx.json file.
 import env from "env";
 
-let mainWindow, authWindow, tray, image;
+let mainWindow, authWindow, tray, image, config;
 
 const setApplicationMenu = () => {
   const menus = [editMenuTemplate];
@@ -62,6 +63,10 @@ app.on("ready", () => {
 
   app.setAsDefaultProtocolClient('heartlist')
 
+  config = require('./services/config')
+  // config.openInEditor()
+  // config.clear()
+
   // Tray
   image = nativeImage.createFromPath(`${__dirname}/heart.png`)
   image.isMacTemplateImage = true
@@ -73,7 +78,7 @@ app.on("ready", () => {
   mainWindow = createWindow("main", {
     width: 350,
     height: 140,
-    show: true,
+    show: false,
     frame: false,
     transparent: true,
     webPreferences: {
@@ -106,7 +111,9 @@ app.on("ready", () => {
     }
   })
 
-  showUserAuthWindow()
+  if (config.get('tokens').access_tokens === undefined) {
+    showUserAuthWindow()
+  }
 
 });
 
@@ -124,12 +131,13 @@ function showUserAuthWindow() {
     })
   );
 
-  if (env.name === "development" || true) {
-    authWindow.openDevTools()//{mode: 'detach'});
+  if (env.name === "development") {
+    // authWindow.openDevTools()
+    //{mode: 'detach'});
   }
   authWindow.show()
   authWindow.webContents.on('did-finish-load', () => {
-    authWindow.webContents.send('foo')
+    authWindow.webContents.send('did-finish-load')
   })
   
 }
@@ -138,6 +146,19 @@ function showUserAuthWindow() {
 // Listen for requests to open window
 ipcMain.on('open-window', (event, arg) => {
   showWindow()
+})
+
+ipcMain.handle('getConfig', (e, key) => {
+  if (key === undefined) {
+    return config.store
+  } else {
+    return config.get(`${key}`)
+  }
+})
+
+ipcMain.handle('setConfig', (e, arg) => {
+  config.set(arg.prop, arg.value)
+  return config.store
 })
 
 ipcMain.on('show-user-auth-window', () => {

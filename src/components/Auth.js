@@ -1,11 +1,12 @@
 import { h, render, Component, createRef } from 'preact';
+import { ipcRenderer } from 'electron';
 
 export default class App extends Component {
 
   state = {
     spotifyState: null,
     playlist: {
-      name: 'foo'
+      name: null
     }
   }
 
@@ -28,10 +29,12 @@ export default class App extends Component {
     this.props.Spotify.getTokens(authCode)
       .then( (tokens) => {
         this.props.Spotify.setTokens(tokens)
+        ipcRenderer.invoke('setConfig', {prop: 'tokens', value: tokens})
       }).then(() => {
         return this.props.Spotify.setUser()
-      }).then(() => {
-        document.getElementById('message').textContent = 'success!'
+      }).then((user) => {
+        ipcRenderer.invoke('setConfig', {prop: 'user', value: user})
+        // document.getElementById('message').textContent = 'success!'
       }).catch((err) => {
         console.log(err)
       })
@@ -41,18 +44,30 @@ export default class App extends Component {
 
   savePlaylist = async () => {
     let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value)
-    debugger
+    ipcRenderer.invoke('setConfig', {prop: 'playlist', value: playlist})
   }
 
   render() {
     return (
-      <div class="">
-        <div>
-          <button onClick={this.authorize}>Authorize!</button>
+      <div class="p-4">
+        <div class="">
+          <button 
+            onClick={this.authorize}
+            class="p-2 border"
+          >
+            Authorize!
+          </button>
           <br /> <br />
         </div>
-        <input type="text" ref={this.playlistInput} value={this.state.playlist.name} />
-        <button onClick={this.savePlaylist}>Click</button>
+        <input 
+          type="text" 
+          ref={this.playlistInput} 
+          value={this.state.playlist.name}
+          class="p-4 border rounded"
+        />
+        <button
+          class="p-4 rounded border"
+         onClick={this.savePlaylist}>Click</button>
       </div>
     );
   }

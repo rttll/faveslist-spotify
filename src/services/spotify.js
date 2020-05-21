@@ -1,8 +1,6 @@
 const {ipcRenderer, shell} = require('electron')
 const qs = require('qs');
 const axios = require('axios')
-const Store = require('electron-store');
-const store = new Store();
 
 require('dotenv').config()
 
@@ -20,22 +18,8 @@ const apiRequest = axios.create({
   baseURL: 'https://api.spotify.com/v1/'
 })
 
-const config = {
-  tokens: null,
-  user: null,
-  playlist: null
-}
-
-  // axios.interceptors.request.use(function (config) {
-  //   debugger
-  //   return config
-  // }, function (error) {
-  //   // Do something with request error
-  //   return Promise.reject(error);
-  // });
-
-
 let currentRequestOptions;
+
 function api(options) {
   currentRequestOptions = options
   if (options.method === undefined) options.method = 'GET'
@@ -53,11 +37,12 @@ function api(options) {
       console.log('api err', message)
     }
     if (message === 'Invalid access token' || message === 'The access token expired') {
+      let refreshToken = ipcRenderer.invoke('getConfig', 'tokens.refresh_token')
         let request = {
           method: 'POST', 
           data: qs.stringify({
             'grant_type': 'refresh_token',
-            'refresh_token': config.tokens.refresh_token
+            'refresh_token': refreshToken
           }),
           url: 'api/token'
         };
@@ -80,20 +65,10 @@ function api(options) {
 
 module.exports = {
   init: () => {
-    for (let k in config) {
-      let stored = localStorage.getItem(k)
-      if (stored !== null) {
-        config[k] = JSON.parse(stored)
-      }
-    }
-    if (config.tokens === null) {
-      
-    } else {
-      module.exports.setTokens(config.tokens)
-    }
-
-    config.rand = store.get('foo')
-    return config
+    ipcRenderer.invoke('getConfig', 'tokens').then((tokens) => {
+      module.exports.setTokens(tokens)
+    }).catch((err) => {
+    })
   },
   authorize: function (state) {
     const scope = [
@@ -128,24 +103,21 @@ module.exports = {
     return request.data
   },
   setTokens: (tokens) => {
-    config.tokens = {...config.tokens, ...tokens}
-    apiRequest.defaults.headers.common['Authorization'] = `Bearer ${config.tokens.access_token}`
-    localStorage.setItem('tokens', JSON.stringify(config.tokens))
+    apiRequest.defaults.headers.common['Authorization'] = `Bearer ${tokens.access_token}`
   },
   setUser: async () => {
     let options = {
       url: 'me'
     }
     let request = await api(options)
-    config.user = request.data
-    localStorage.setItem('user', JSON.stringify(config.user))
-    return config.user
+    return request.data
 
   },
   setPlaylist: async (name) => {
     if (name.length < 1) name = 'Heartlist'
+    let userID = await ipcRenderer.invoke('getConfig', 'user.id')
     let options = {
-      url: `users/${config.user.id}/playlists`,
+      url: `users/${userID}/playlists`,
       method: 'POST',
       data: {
         name: name,
@@ -153,16 +125,14 @@ module.exports = {
       }
     }
     let playlist = await api(options)
-    config.playlist = playlist
-    localStorage.setItem('playlist', JSON.stringify(playlist))
-    return playlist
+    return playlist.data
 
   },
   getPlaylistTracks: () => {
     let options = {
       url: `playlists/${config.playlist.id}/tracks`
     }
-    let tracks = api(optoins)
+    let tracks = api(options)
 
   },
   addTrack: (uri) => {
