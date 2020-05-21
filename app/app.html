@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en-US">
+<html lang="en-US" class="bg-red-900">
 <head>
 	<meta charset="UTF-8">
 	<!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' api.spotify.com; connect-src 'self' https://*.spotify.com; img-src 'self' https://*.scdn.co https://*.fbcdn.net; style-src 'self';"> -->
@@ -7,25 +7,30 @@
   <!-- <link rel="stylesheet" href="app.css" /> -->
 </head>
 <body>
-  <main>
-    <header>
-      <div id="user-box">
-        <img src="" alt="" id="user-image" />
-        <p id="user-name"></p>
+  <main class="p-4">
+    <div class="max-w-sm rounded overflow-hidden shadow-lg flex">
+      <div class="bg-gray-200 flex-grow">
+        <dif class="flex">
+          <img src="https://i.scdn.co/image/ab67616d000048514c894cc89fde8ea8d93c059a" alt="">
+          <div class="w-full flex justify-between items-center">
+            <div class="px-3 py-2">
+              <div class="font-bold text-xl">Honestly</div>
+              <p class="text-gray-700 text-base">
+                TS Graye
+              </p>
+            </div>
+            <div class="h-full px-4 flex cursor-pointer hover:bg-gray-800">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 825.73 755.65" class="h-6 m-auto">
+                <g id="heart" data-name="Layer 2"><g id="main"><path d="M755.64,412.85c93.75-94.73,93.45-247.51-.9-341.86h0c-94.35-94.35-247.13-94.65-341.86-.9l0,0v0C318.12-23.66,165.34-23.36,71,71h0c-94.35,94.35-94.65,247.13-.9,341.86h0L412.86,755.65,754.74,413.78h0l.91-.92Z" style="fill:#0d0709"/></g></g></svg>
+            </div>
+          </div>
+        </dif>
       </div>
-    </header>
-    <section id="add-track">
-      <img src="" alt="" id="track-image" />
-      <div id="heart-container">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 825.73 755.65"><g id="heart" data-name="Layer 2"><g id="main"><path d="M755.64,412.85c93.75-94.73,93.45-247.51-.9-341.86h0c-94.35-94.35-247.13-94.65-341.86-.9l0,0v0C318.12-23.66,165.34-23.36,71,71h0c-94.35,94.35-94.65,247.13-.9,341.86h0L412.86,755.65,754.74,413.78h0l.91-.92Z" style="fill:#0d0709"/></g></g></svg>
+      <div class="p-1">
+        hi
       </div>
-      <ul>
-        <li id="track-name"></li>
-        <li id="track-artist"></li>
-      </ul>
-    </section>
-    <p id="error"></p>
-  </main>
+    </div>
+  </main>  
   <script src="app.js"></script>
 
 </body>

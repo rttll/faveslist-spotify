@@ -25,33 +25,6 @@ const setApplicationMenu = () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menus));
 };
 
-const toggleWindow = () => {
-  if (mainWindow.isVisible()) {
-    mainWindow.hide()
-  } else {
-    // This will call getTrack()
-    mainWindow.webContents.send('window-toggled', 'open')
-    showWindow()
-  }
-}
-
-const showWindow = () => {
-  const trayPos = tray.getBounds()
-  const winPos = mainWindow.getBounds()
-  let x, y = 0
-  if (process.platform == 'darwin') {
-    x = Math.round(trayPos.x + (trayPos.width / 2) - (trayPos.width / 2) - 5)
-    y = Math.round(trayPos.y + trayPos.height)
-  } else {
-    x = Math.round(trayPos.x + (trayPos.width / 2) - (winPos.width / 2))
-    y = Math.round(trayPos.y + trayPos.height * 10)
-  }
-
-  mainWindow.setPosition(x, y, false)
-  mainWindow.show()
-  mainWindow.focus()
-}
-
 if (env.name !== "production") {
   const userDataPath = app.getPath("userData");
   app.setPath("userData", `${userDataPath} (${env.name})`);
@@ -75,32 +48,7 @@ app.on("ready", () => {
     toggleWindow()
   })
 
-  mainWindow = createWindow("main", {
-    width: 350,
-    height: 140,
-    show: false,
-    frame: false,
-    transparent: true,
-    webPreferences: {
-      nodeIntegration: true
-    }
-  });
-
-  mainWindow.loadURL(
-    url.format({
-      pathname: path.join(__dirname, "app.html"),
-      protocol: "file:",
-      slashes: true
-    })
-  );
-
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.send('app-init')
-  })
-
-  if (env.name === "development") {
-    // mainWindow.openDevTools({mode: 'detach'});
-  }
+  createMainWindow()
 
   authWindow = createWindow('auth', {
     width: 1300,
@@ -111,18 +59,85 @@ app.on("ready", () => {
     }
   })
 
-  if (config.get('tokens').access_tokens === undefined) {
+  let store = config.store,
+      tokens = store.tokens.access_token,
+      userID = store.user.id,
+      playlistID = store.playlist.id;
+
+  console.log(tokens, userID, playlistID)
+  if (tokens && userID && playlistID) {
+    showMainWindow()
+  } else {
+
     showUserAuthWindow()
   }
 
 });
 
-app.on("window-all-closed", () => {
-  app.quit();
-});
 
+const createMainWindow = () => {
+  mainWindow = new BrowserWindow({
+    width: 350,
+    height: 100,
+    show: false,
+    frame: false,
+    transparent: true,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  });
+  
+  mainWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, "app.html"),
+      protocol: "file:",
+      slashes: true
+    })
+  );
+    
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('app-init')
+  })
+  
+  if (env.name === "development") {
+    mainWindow.openDevTools({mode: 'detach'});
+  }
 
-function showUserAuthWindow() {
+  setMainWindowPosition()
+  showMainWindow()
+    
+}
+
+const setMainWindowPosition = () => {
+  const trayBounds = tray.getBounds()
+  const bounds = mainWindow.getBounds()
+  let x, y = 0
+  if (process.platform == 'darwin') {
+    x = Math.round(trayBounds.x - bounds.width / 2)
+    y = Math.round(trayBounds.y - trayBounds.height + 5)
+  } else {
+    x = Math.round(trayBounds.x - (trayBounds.width / 2) - (bounds.width / 2))
+    y = Math.round(trayBounds.y - trayBounds.height * 10)
+  }
+  mainWindow.setPosition(x, y, false)
+}
+
+const toggleWindow = () => {
+  if (mainWindow.isVisible()) {
+    mainWindow.hide()
+  } else {
+    // This will call getTrack()
+    mainWindow.webContents.send('window-toggled', 'open')
+    showMainWindow()
+  }
+}
+
+const showMainWindow = () => {
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+const showUserAuthWindow = () => {
   authWindow.loadURL(
     url.format({
       pathname: path.join(__dirname, "auth.html"),
@@ -130,7 +145,7 @@ function showUserAuthWindow() {
       slashes: true
     })
   );
-
+  
   if (env.name === "development") {
     // authWindow.openDevTools()
     //{mode: 'detach'});
@@ -142,10 +157,13 @@ function showUserAuthWindow() {
   
 }
 
+app.on("window-all-closed", () => {
+  app.quit();
+});
 
 // Listen for requests to open window
 ipcMain.on('open-window', (event, arg) => {
-  showWindow()
+  showMainWindow()
 })
 
 ipcMain.handle('getConfig', (e, key) => {
@@ -159,10 +177,6 @@ ipcMain.handle('getConfig', (e, key) => {
 ipcMain.handle('setConfig', (e, arg) => {
   config.set(arg.prop, arg.value)
   return config.store
-})
-
-ipcMain.on('show-user-auth-window', () => {
-  showUserAuthWindow()
 })
 
 ipcMain.on('launch-clicked', () => {
