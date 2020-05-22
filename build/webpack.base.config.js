@@ -28,7 +28,7 @@ module.exports = env => {
     module: {
       rules: [
         {
-          test: /\.js$/,
+          test: /\.(js|jsx)$/,
           exclude: /node_modules/,
           use: ["babel-loader"]
         },
@@ -52,12 +52,6 @@ module.exports = env => {
     },
     plugins: [
       new FriendlyErrorsWebpackPlugin({ clearConsole: env === "development" })
-    ],
-    // optimization: {
-    //   splitChunks: {
-    //     chunks: 'all',
-    //     name: true // false // production
-    //   }
-    // }
+    ]
   };
 };

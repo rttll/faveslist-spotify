@@ -1,4 +1,7 @@
+import { h, render } from 'preact'
+
 import "./stylesheets/app.css";
+import App from './components/App.jsx'
 
 // Small helpers you might want to keep
 import "./helpers/context_menu.js";
@@ -21,39 +24,33 @@ const errText = document.getElementById('error');
 
 const Spotify = require('./services/spotify.js')
 
-let config, playing;
+let AppMethods;
 
 ipcRenderer.on('app-init', () => {
   init()
 })
 
-async function init() {
+ipcRenderer.on('hydrate-track', () => {
+  // AppMethods.hydrateTrack()
+})
 
+async function init() {
+  
   // config = Spotify.init()
   // playing = await Spotify.currentlyPlaying()
   // let player = await Spotify.player()
   // console.log(playing)
-
+  
   // if (playing.length > 0) updateUI()
+  
+  render(
+    <App
+    Spotify={ Spotify }
+    ref={app => AppMethods = app}
+    />,
+    document.getElementById('app')
+  )
 
-}
-
-function updateUI() {
-  let track = playing.item
-  let artists = []
-  for (var v of track.artists) {
-    artists.push(v.name)
-  }
-  errText.textContent = ''
-  container.classList.remove('loading')
-  trackArtist.textContent = artists.join(', ')
-  trackName.textContent = track.name
-  trackImage.src = track.album.images[0].url
-  if (playlist.tracks.indexOf(track.id) > -1) {
-    heart.classList.add('liked')
-  } else {
-    heart.classList.remove('liked')
-  }
 }
 
 

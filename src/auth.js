@@ -2,7 +2,7 @@ const {ipcRenderer, shell} = require('electron')
 const Spotify = require('./services/spotify')
 import { h, render, Component, createRef } from 'preact';
 import './stylesheets/app.css'
-import Auth from './components/Auth'
+import Auth from './components/Auth.jsx'
 
 let AuthMethods;
 

@@ -14,59 +14,109 @@ const authHeader = 'Basic ' + new Buffer.from(process.env.CLIENT_ID + ':' + proc
 authRequest.defaults.headers.common['Authorization'] = authHeader
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
 
+let refreshToken;
 const apiRequest = axios.create({
   baseURL: 'https://api.spotify.com/v1/'
 })
 
-let currentRequestOptions;
+apiRequest.interceptors.request.use(async function (config) {
+  if (config.headers.common['Authorization'] === undefined) {
+    let tokens = await module.exports.init()
+    config.headers['Authorization'] = `Bearer ${tokens.access_token}`
+  }
+  return config
+}, function (error) {
+  return Promise.reject(error);
+});
 
-function api(options) {
-  currentRequestOptions = options
+// TODO: this needs to then resend the api request
+apiRequest.interceptors.response.use(function(config) {
+  return config
+}, async function(error) {
+  let authOptions = {
+    method: 'POST', 
+    data: qs.stringify({
+      'grant_type': 'refresh_token',
+      'refresh_token': refreshToken
+    }),
+    url: 'api/token'
+  };
+  let refresh = await authRequest(authOptions)
+  module.exports.setTokens(refresh.data)
+  ipcRenderer.invoke('setConfig', {key: 'tokens', value: refresh.data})
+  // TODO resend api request here
+})
+
+let currentRequestOptions, currentRequestAttempts = 0;
+
+async function api(options) {
+  if (currentRequestAttempts > 2) {
+    currentRequestAttempts = 0;
+    throw new Error('unknown api error')
+  } else {
+    currentRequestAttempts++
+    currentRequestOptions = options
+  }
+
   if (options.method === undefined) options.method = 'GET'
-  return apiRequest(options).then((resp) => {
-    if (resp.status >= 200 && resp.status < 300) {
-      return resp
-    } else {
-      console.log('err')
-      return false
-    }
-  }).catch((err) => {
-    let data = err.response.data;
-    if (data.error) {
-      var message = data.error.message
-      console.log('api err', message)
-    }
-    if (message === 'Invalid access token' || message === 'The access token expired') {
-      let refreshToken = ipcRenderer.invoke('getConfig', 'tokens.refresh_token')
-        let request = {
-          method: 'POST', 
-          data: qs.stringify({
-            'grant_type': 'refresh_token',
-            'refresh_token': refreshToken
-          }),
-          url: 'api/token'
-        };
-        authRequest(request).then(function(resp) {
-          if (resp.status === 200) {
-            module.exports.setTokens(resp.data)
-            return apiRequest(currentRequestOptions)
-          } else {
-            // todo assume we lost user auth.
-            // show auth / start screen
-          }
-        }).catch((err) => {
-          console.log('api err - could not refresh token?', err)
-        })
-    }
-    return err
-  })
 
+  try {
+    // debugger
+    let request = await apiRequest(options)
+    if (request.status >= 200 && request.status < 300) {
+      return request
+    } else {
+      throw new Error('Uncaught error from Spotify')
+    }
+  } catch (error) {
+    // debugger
+  }
+
+}
+
+async function apiErrorHandler(err) {
+  let data = {}
+  let status = null;
+  // The err response doesn't always have {data}
+  // e.g. if the request completely fails
+
+  if (err.response.data) data = err.response.data
+  if (data.error) {
+    status = data.error.status
+  }
+
+  if (status === 401) {
+    let authOptions = {
+      method: 'POST', 
+      data: qs.stringify({
+        'grant_type': 'refresh_token',
+        'refresh_token': refreshToken
+      }),
+      url: 'api/token'
+    };
+    return authRequest(authOptions).then(function(resp) {
+      if (resp.status === 200) {
+        module.exports.setTokens(resp.data)
+        ipcRenderer.invoke('setConfig', {key: 'tokens', value: resp.data})
+        return resp.data
+        // api(currentRequestOptions)
+      } else {
+        // todo assume we lost user auth.
+        // show auth / start screen
+      }
+    }).catch((err) => {
+      console.log('api err - could not refresh token?', err)
+      return err
+    })
+  }  
 }
 
 module.exports = {
   init: () => {
-    ipcRenderer.invoke('getConfig', 'tokens').then((tokens) => {
+    return ipcRenderer.invoke('getConfig', 'tokens').then((tokens) => {
+      refreshToken = tokens.refresh_token;
       module.exports.setTokens(tokens)
+      return tokens
     }).catch((err) => {
     })
   },
@@ -153,7 +203,7 @@ module.exports = {
   currentlyPlaying: async () => {
     // apiRequest.defaults.headers.common['Authorization'] = `Bearer 1234`
     let request = await api({url: 'me/player/currently-playing'})
-    return request.data    
+    return request.data !== undefined ? request.data : request
   }
 }
 

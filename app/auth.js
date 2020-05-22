@@ -502,7 +502,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _stylesheets_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./stylesheets/app.css */ "./src/stylesheets/app.css");
 /* harmony import */ var _stylesheets_app_css__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_stylesheets_app_css__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _components_Auth__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/Auth */ "./src/components/Auth.js");
+/* harmony import */ var _components_Auth_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/Auth.jsx */ "./src/components/Auth.jsx");
 const {
   ipcRenderer,
   shell
@@ -523,17 +523,17 @@ function launchClicked() {
   ipcRenderer.send('launch-clicked');
 }
 
-Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(_components_Auth__WEBPACK_IMPORTED_MODULE_2__["default"], {
+Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(_components_Auth_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], {
   Spotify: Spotify,
   ref: app => AuthMethods = app
 }), document.getElementById('app'));
 
 /***/ }),
 
-/***/ "./src/components/Auth.js":
-/*!********************************!*\
-  !*** ./src/components/Auth.js ***!
-  \********************************/
+/***/ "./src/components/Auth.jsx":
+/*!*********************************!*\
+  !*** ./src/components/Auth.jsx ***!
+  \*********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -576,14 +576,14 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
       this.props.Spotify.getTokens(authCode).then(tokens => {
         this.props.Spotify.setTokens(tokens);
         electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
-          prop: 'tokens',
+          key: 'tokens',
           value: tokens
         });
       }).then(() => {
         return this.props.Spotify.setUser();
       }).then(user => {
         electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
-          prop: 'user',
+          key: 'user',
           value: user
         }); // document.getElementById('message').textContent = 'success!'
       }).catch(err => {
@@ -596,7 +596,7 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
     _defineProperty(this, "savePlaylist", async () => {
       let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value);
       electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
-        prop: 'playlist',
+        key: 'playlist',
         value: playlist
       });
     });
@@ -654,59 +654,110 @@ const authRequest = axios.create({
 const authHeader = 'Basic ' + new Buffer.from(process.env.CLIENT_ID + ':' + process.env.CLIENT_SECRET).toString('base64');
 authRequest.defaults.headers.common['Authorization'] = authHeader;
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
+let refreshToken;
 const apiRequest = axios.create({
   baseURL: 'https://api.spotify.com/v1/'
 });
-let currentRequestOptions;
+apiRequest.interceptors.request.use(async function (config) {
+  if (config.headers.common['Authorization'] === undefined) {
+    let tokens = await module.exports.init();
+    config.headers['Authorization'] = `Bearer ${tokens.access_token}`;
+  }
 
-function api(options) {
-  currentRequestOptions = options;
+  return config;
+}, function (error) {
+  return Promise.reject(error);
+}); // TODO: this needs to then resend the api request
+
+apiRequest.interceptors.response.use(function (config) {
+  return config;
+}, async function (error) {
+  let authOptions = {
+    method: 'POST',
+    data: qs.stringify({
+      'grant_type': 'refresh_token',
+      'refresh_token': refreshToken
+    }),
+    url: 'api/token'
+  };
+  let refresh = await authRequest(authOptions);
+  module.exports.setTokens(refresh.data);
+  ipcRenderer.invoke('setConfig', {
+    key: 'tokens',
+    value: refresh.data
+  }); // TODO resend api request here
+});
+let currentRequestOptions,
+    currentRequestAttempts = 0;
+
+async function api(options) {
+  if (currentRequestAttempts > 2) {
+    currentRequestAttempts = 0;
+    throw new Error('unknown api error');
+  } else {
+    currentRequestAttempts++;
+    currentRequestOptions = options;
+  }
+
   if (options.method === undefined) options.method = 'GET';
-  return apiRequest(options).then(resp => {
-    if (resp.status >= 200 && resp.status < 300) {
-      return resp;
+
+  try {
+    // debugger
+    let request = await apiRequest(options);
+
+    if (request.status >= 200 && request.status < 300) {
+      return request;
     } else {
-      console.log('err');
-      return false;
+      throw new Error('Uncaught error from Spotify');
     }
-  }).catch(err => {
-    let data = err.response.data;
+  } catch (error) {// debugger
+  }
+}
 
-    if (data.error) {
-      var message = data.error.message;
-      console.log('api err', message);
-    }
+async function apiErrorHandler(err) {
+  let data = {};
+  let status = null; // The err response doesn't always have {data}
+  // e.g. if the request completely fails
 
-    if (message === 'Invalid access token' || message === 'The access token expired') {
-      let refreshToken = ipcRenderer.invoke('getConfig', 'tokens.refresh_token');
-      let request = {
-        method: 'POST',
-        data: qs.stringify({
-          'grant_type': 'refresh_token',
-          'refresh_token': refreshToken
-        }),
-        url: 'api/token'
-      };
-      authRequest(request).then(function (resp) {
-        if (resp.status === 200) {
-          module.exports.setTokens(resp.data);
-          return apiRequest(currentRequestOptions);
-        } else {// todo assume we lost user auth.
+  if (err.response.data) data = err.response.data;
+
+  if (data.error) {
+    status = data.error.status;
+  }
+
+  if (status === 401) {
+    let authOptions = {
+      method: 'POST',
+      data: qs.stringify({
+        'grant_type': 'refresh_token',
+        'refresh_token': refreshToken
+      }),
+      url: 'api/token'
+    };
+    return authRequest(authOptions).then(function (resp) {
+      if (resp.status === 200) {
+        module.exports.setTokens(resp.data);
+        ipcRenderer.invoke('setConfig', {
+          key: 'tokens',
+          value: resp.data
+        });
+        return resp.data; // api(currentRequestOptions)
+      } else {// todo assume we lost user auth.
           // show auth / start screen
         }
-      }).catch(err => {
-        console.log('api err - could not refresh token?', err);
-      });
-    }
-
-    return err;
-  });
+    }).catch(err => {
+      console.log('api err - could not refresh token?', err);
+      return err;
+    });
+  }
 }
 
 module.exports = {
   init: () => {
-    ipcRenderer.invoke('getConfig', 'tokens').then(tokens => {
+    return ipcRenderer.invoke('getConfig', 'tokens').then(tokens => {
+      refreshToken = tokens.refresh_token;
       module.exports.setTokens(tokens);
+      return tokens;
     }).catch(err => {});
   },
   authorize: function (state) {
@@ -786,7 +837,7 @@ module.exports = {
     let request = await api({
       url: 'me/player/currently-playing'
     });
-    return request.data;
+    return request.data !== undefined ? request.data : request;
   }
 };
 

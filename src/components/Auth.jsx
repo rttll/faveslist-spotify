@@ -10,6 +10,8 @@ export default class App extends Component {
     }
   }
 
+  
+
   componentDidMount() {
     this.props.Spotify.init()
   }
@@ -29,11 +31,11 @@ export default class App extends Component {
     this.props.Spotify.getTokens(authCode)
       .then( (tokens) => {
         this.props.Spotify.setTokens(tokens)
-        ipcRenderer.invoke('setConfig', {prop: 'tokens', value: tokens})
+        ipcRenderer.invoke('setConfig', {key: 'tokens', value: tokens})
       }).then(() => {
         return this.props.Spotify.setUser()
       }).then((user) => {
-        ipcRenderer.invoke('setConfig', {prop: 'user', value: user})
+        ipcRenderer.invoke('setConfig', {key: 'user', value: user})
         // document.getElementById('message').textContent = 'success!'
       }).catch((err) => {
         console.log(err)
@@ -44,7 +46,7 @@ export default class App extends Component {
 
   savePlaylist = async () => {
     let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value)
-    ipcRenderer.invoke('setConfig', {prop: 'playlist', value: playlist})
+    ipcRenderer.invoke('setConfig', {key: 'playlist', value: playlist})
   }
 
   render() {

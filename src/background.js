@@ -37,8 +37,10 @@ app.on("ready", () => {
   app.setAsDefaultProtocolClient('heartlist')
 
   config = require('./services/config')
-  // config.openInEditor()
-  // config.clear()
+  if (env.name === "development") {
+    // config.openInEditor()
+    // config.clear()
+  }
 
   // Tray
   image = nativeImage.createFromPath(`${__dirname}/heart.png`)
@@ -60,25 +62,24 @@ app.on("ready", () => {
   })
 
   let store = config.store,
-      tokens = store.tokens.access_token,
+      access = store.tokens.access_token,
+      refresh = store.tokens.refresh_token,
       userID = store.user.id,
       playlistID = store.playlist.id;
 
-  console.log(tokens, userID, playlistID)
-  if (tokens && userID && playlistID) {
+  if (access && refresh && userID && playlistID) {
     showMainWindow()
   } else {
-
     showUserAuthWindow()
   }
-
 });
 
 
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
     width: 350,
-    height: 100,
+    // height: 130,
+    height: 64,
     show: false,
     frame: false,
     transparent: true,
@@ -175,7 +176,8 @@ ipcMain.handle('getConfig', (e, key) => {
 })
 
 ipcMain.handle('setConfig', (e, arg) => {
-  config.set(arg.prop, arg.value)
+  let current = config.get(arg.key)
+  config.set(arg.key, {...current, ...arg.value})
   return config.store
 })
 
