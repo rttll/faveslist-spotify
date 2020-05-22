@@ -7,20 +7,8 @@ import App from './components/App.jsx'
 import "./helpers/context_menu.js";
 import "./helpers/external_links.js";
 
-/* App */
-
 const {ipcRenderer, shell} = require('electron')
 const {globalShortcut} = require('electron').remote
-
-
-// DOM
-const container = document.getElementsByTagName('main')[0]
-const addTrackTrigger = document.getElementById('add-track')
-const heart = document.getElementById('heart-container')
-const trackName = document.getElementById('track-name')
-const trackArtist = document.getElementById('track-artist')
-const trackImage = document.getElementById('track-image')
-const errText = document.getElementById('error');
 
 const Spotify = require('./services/spotify.js')
 
@@ -35,13 +23,6 @@ ipcRenderer.on('hydrate-track', () => {
 })
 
 async function init() {
-  
-  // config = Spotify.init()
-  // playing = await Spotify.currentlyPlaying()
-  // let player = await Spotify.player()
-  // console.log(playing)
-  
-  // if (playing.length > 0) updateUI()
   
   render(
     <App

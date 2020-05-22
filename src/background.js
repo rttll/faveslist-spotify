@@ -101,7 +101,7 @@ const createMainWindow = () => {
   })
   
   if (env.name === "development") {
-    mainWindow.openDevTools({mode: 'detach'});
+    // mainWindow.openDevTools({mode: 'detach'});
   }
 
   setMainWindowPosition()

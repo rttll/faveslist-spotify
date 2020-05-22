@@ -648,13 +648,16 @@ const axios = __webpack_require__(/*! axios */ "axios");
 __webpack_require__(/*! dotenv */ "dotenv").config();
 
 const redirectUri = 'heartlist://';
+const appConfig = {
+  playlist: null
+};
+let refreshToken;
 const authRequest = axios.create({
   baseURL: 'https://accounts.spotify.com/'
 });
 const authHeader = 'Basic ' + new Buffer.from(process.env.CLIENT_ID + ':' + process.env.CLIENT_SECRET).toString('base64');
 authRequest.defaults.headers.common['Authorization'] = authHeader;
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
-let refreshToken;
 const apiRequest = axios.create({
   baseURL: 'https://api.spotify.com/v1/'
 });
@@ -672,26 +675,30 @@ apiRequest.interceptors.request.use(async function (config) {
 apiRequest.interceptors.response.use(function (config) {
   return config;
 }, async function (error) {
-  let authOptions = {
-    method: 'POST',
-    data: qs.stringify({
-      'grant_type': 'refresh_token',
-      'refresh_token': refreshToken
-    }),
-    url: 'api/token'
-  };
-  let refresh = await authRequest(authOptions);
-  module.exports.setTokens(refresh.data);
-  ipcRenderer.invoke('setConfig', {
-    key: 'tokens',
-    value: refresh.data
-  }); // TODO resend api request here
+  if (error.response.data.error.status === 401) {
+    let authOptions = {
+      method: 'POST',
+      data: qs.stringify({
+        'grant_type': 'refresh_token',
+        'refresh_token': refreshToken
+      }),
+      url: 'api/token'
+    };
+    let refresh = await authRequest(authOptions);
+    module.exports.setTokens(refresh.data);
+    ipcRenderer.invoke('setConfig', {
+      key: 'tokens',
+      value: refresh.data
+    }); // TODO resend api request here
+  } else {
+    return error.response;
+  }
 });
 let currentRequestOptions,
     currentRequestAttempts = 0;
 
 async function api(options) {
-  if (currentRequestAttempts > 2) {
+  if (currentRequestAttempts > 1) {
     currentRequestAttempts = 0;
     throw new Error('unknown api error');
   } else {
@@ -706,11 +713,13 @@ async function api(options) {
     let request = await apiRequest(options);
 
     if (request.status >= 200 && request.status < 300) {
+      currentRequestAttempts = 0;
       return request;
     } else {
       throw new Error('Uncaught error from Spotify');
     }
-  } catch (error) {// debugger
+  } catch (error) {
+    debugger;
   }
 }
 
@@ -749,6 +758,12 @@ async function apiErrorHandler(err) {
       console.log('api err - could not refresh token?', err);
       return err;
     });
+  }
+}
+
+async function setConfig() {
+  if (appConfig.playlist === null) {
+    appConfig.playlist = await ipcRenderer.invoke('getConfig', 'playlist');
   }
 }
 
@@ -810,21 +825,22 @@ module.exports = {
     return playlist.data;
   },
   getPlaylistTracks: () => {
+    setConfig();
     let options = {
-      url: `playlists/${config.playlist.id}/tracks`
+      url: `playlists/${appConfig.playlist.id}/tracks`
     };
     let tracks = api(options);
   },
-  addTrack: uri => {
+  addRemoveTrack: async (trackURI, method) => {
+    await setConfig();
     let options = {
-      url: `playlists/${config.playlist.id}/tracks`,
-      method: 'POST',
+      url: `playlists/${appConfig.playlist.id}/tracks`,
+      method: method,
       data: {
-        uris: uri
+        uris: [trackURI]
       }
     };
-    let track = api(options);
-    return track;
+    return await api(options);
   },
   player: async () => {
     let request = await api({
