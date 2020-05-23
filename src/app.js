@@ -14,7 +14,9 @@ const Spotify = require('./services/spotify.js')
 
 let AppMethods;
 
-ipcRenderer.on('app-init', () => {
+ipcRenderer.on('app-init', async () => {
+  let response = await Spotify.getHeartlistTracks()
+  ipcRenderer.send('remote-tracklist', response)
   init()
 })
 
@@ -27,12 +29,11 @@ ipcRenderer.on('window-toggled', (e, arg) => {
 ipcRenderer.on('shortcut', async () => {
   let liked = await AppMethods.heartClicked()
   if (liked) {
-    ipcRenderer.send('track-was-hearted')
+    ipcRenderer.send('track-was-hearted', liked.uri)
   }
 })
 
 async function init() {
-  
   render(
     <App
     Spotify={ Spotify }

@@ -575,14 +575,14 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
       this.props.Spotify.getTokens(authCode).then(tokens => {
         this.props.Spotify.setTokens(tokens);
-        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replaceConfig', {
           key: 'tokens',
           value: tokens
         });
       }).then(() => {
         return this.props.Spotify.setUser();
       }).then(user => {
-        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replaceConfig', {
           key: 'user',
           value: user
         }); // document.getElementById('message').textContent = 'success!'
@@ -595,7 +595,7 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
     _defineProperty(this, "savePlaylist", async () => {
       let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value);
-      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('setConfig', {
+      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replaceConfig', {
         key: 'playlist',
         value: playlist
       });
@@ -686,7 +686,7 @@ apiRequest.interceptors.response.use(function (config) {
     };
     let refresh = await authRequest(authOptions);
     module.exports.setTokens(refresh.data);
-    ipcRenderer.invoke('setConfig', {
+    ipcRenderer.invoke('updateConfig', {
       key: 'tokens',
       value: refresh.data
     }); // TODO resend api request here
@@ -746,7 +746,7 @@ async function apiErrorHandler(err) {
     return authRequest(authOptions).then(function (resp) {
       if (resp.status === 200) {
         module.exports.setTokens(resp.data);
-        ipcRenderer.invoke('setConfig', {
+        ipcRenderer.invoke('updateConfig', {
           key: 'tokens',
           value: resp.data
         });
@@ -824,12 +824,12 @@ module.exports = {
     let playlist = await api(options);
     return playlist.data;
   },
-  getPlaylistTracks: () => {
-    setConfig();
+  getHeartlistTracks: async () => {
+    await setConfig();
     let options = {
       url: `playlists/${appConfig.playlist.id}/tracks`
     };
-    let tracks = api(options);
+    return await api(options);
   },
   addRemoveTrack: async (trackURI, method) => {
     await setConfig();

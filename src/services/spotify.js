@@ -49,7 +49,7 @@ apiRequest.interceptors.response.use(function(config) {
     };
     let refresh = await authRequest(authOptions)
     module.exports.setTokens(refresh.data)
-    ipcRenderer.invoke('setConfig', {key: 'tokens', value: refresh.data})
+    ipcRenderer.invoke('updateConfig', {key: 'tokens', value: refresh.data})
     // TODO resend api request here
   } else {
     return error.response
@@ -107,7 +107,7 @@ async function apiErrorHandler(err) {
     return authRequest(authOptions).then(function(resp) {
       if (resp.status === 200) {
         module.exports.setTokens(resp.data)
-        ipcRenderer.invoke('setConfig', {key: 'tokens', value: resp.data})
+        ipcRenderer.invoke('updateConfig', {key: 'tokens', value: resp.data})
         return resp.data
         // api(currentRequestOptions)
       } else {
@@ -194,12 +194,12 @@ module.exports = {
     return playlist.data
 
   },
-  getPlaylistTracks: () => {
-    setConfig()
+  getHeartlistTracks: async () => {
+    await setConfig()
     let options = {
       url: `playlists/${appConfig.playlist.id}/tracks`
     }
-    let tracks = api(options)
+    return await api(options)
   },
   addRemoveTrack: async (trackURI, method) => {
     await setConfig()

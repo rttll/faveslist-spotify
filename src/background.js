@@ -188,6 +188,15 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
+app.on('open-url', function (event, url) {
+  event.preventDefault()
+  authWindow.webContents.send('authorized', url)
+})
+
+app.on('second-instance', (event, argv, cwd) => {
+  console.log('secon')
+})
+
 ipcMain.handle('getConfig', (e, key) => {
   if (key === undefined) {
     return config.store
@@ -196,24 +205,37 @@ ipcMain.handle('getConfig', (e, key) => {
   }
 })
 
-ipcMain.handle('setConfig', (e, arg) => {
-  let current = config.get(arg.key)
-  config.set(arg.key, {...current, ...arg.value})
+function updateConfig(arg) {
+  let storeString = JSON.stringify(config.store)
+  let currentStore = JSON.parse(storeString)
+  let current = currentStore[arg.key]
+  if (currentStore[arg.key].isArray()) {
+    config.set(current.push(arg.value))
+  } else {
+    config.set(arg.key, {...current, ...arg.value})
+  }
+
   return config.store
+}
+
+function replaceConfig(arg) {
+  config.set(arg.key, arg.value)
+  return config.store
+}
+
+ipcMain.handle('replaceConfig', (e, arg) => {
+  return replaceConfig(arg)
 })
 
-ipcMain.on('track-was-hearted', () => {
+ipcMain.on('track-was-hearted', (e, uri) => {
   setTrayImage('success')
+  updateConfig({key: 'hearts', value: uri})
   setTimeout(() => {
     setTrayImage('base')
   }, 2000);
 })
 
-app.on('open-url', function (event, url) {
-  event.preventDefault()
-  authWindow.webContents.send('authorized', url)
-})
-
-app.on('second-instance', (event, argv, cwd) => {
-  console.log('secon')
+ipcMain.on('remote-tracklist', (e, spotifyResponse) => {
+  let tracks = spotifyResponse.data.items.map(obj => obj.track.uri)
+  replaceConfig({key: 'hearts', value: tracks})
 })
