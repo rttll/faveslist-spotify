@@ -2,6 +2,19 @@ import { h, Component, createRef } from 'preact'
 import IconAction from './IconAction.jsx'
 import Image from './Image.jsx'
 
+const schema = {
+  loading: true,
+  hasTrack: false,
+  hearted: false,
+  item: {
+    album: {
+      artists: [],
+      images: []
+    },
+    name: 'Loading...'
+  }
+}
+
 export default class App extends Component {
   
   constructor(props) {
@@ -26,41 +39,40 @@ export default class App extends Component {
 
   componentDidMount() {
     this.hydrateTrack()
-    setTimeout(() => {
-      // debugger
-    }, 1000);
+    // setTimeout(() => {
+    //   debugger
+    // }, 1000);
   }
 
-  hydrateTrack() {
-    this.Spotify.currentlyPlaying().then((data) => {
-
+  async hydrateTrack() {
+    try {
+      let currentlyPlaying = await this.Spotify.currentlyPlaying()
       let stateString = JSON.stringify(this.state)
       let update = JSON.parse(stateString)
       update.loading = false
-      if (data.item) {
+      if (currentlyPlaying.item) {
         update.hasTrack = true
-        update.item = data.item
+        update.item = currentlyPlaying.item
       } else {
         update.item.name = 'No track playing'
       }
-      this.setState(update, () => {
-        console.log(this.state)
-      })  
-    }).catch((err) => {
-      console.error('App.jsx ', err)
-    })
+      await this.setState(update)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
-  heartClicked = function(e) {
+  heartClicked = async function(e) {
+    await this.hydrateTrack()
     if (this.state.hasTrack) {
       let method = this.state.hearted ? 'DELETE' : 'POST';
-      this.Spotify.addRemoveTrack(this.state.item.uri, method).then((resp) => {
-        if (true) {
-          this.setState({hearted: !this.state.hearted})
-        }
-      }).catch((err) => {
-        console.log(err)
-      })
+      try {
+        await this.Spotify.addRemoveTrack(this.state.item.uri, method)
+        this.setState({hearted: !this.state.hearted})
+        return true
+      } catch (error) {
+        console.log(error)      
+      }
     }
   }
 

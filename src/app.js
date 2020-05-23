@@ -18,8 +18,17 @@ ipcRenderer.on('app-init', () => {
   init()
 })
 
-ipcRenderer.on('hydrate-track', () => {
-  // AppMethods.hydrateTrack()
+ipcRenderer.on('window-toggled', (e, arg) => {
+  if (arg === 'open') {
+    AppMethods.hydrateTrack()
+  }
+})
+
+ipcRenderer.on('shortcut', async () => {
+  let liked = await AppMethods.heartClicked()
+  if (liked) {
+    ipcRenderer.send('track-was-hearted')
+  }
 })
 
 async function init() {

@@ -15,7 +15,7 @@ import createWindow from "./helpers/window";
 // in config/env_xxx.json file.
 import env from "env";
 
-let mainWindow, authWindow, tray, image, config;
+let mainWindow, authWindow, tray, trayImages, config;
 
 const setApplicationMenu = () => {
   const menus = [editMenuTemplate];
@@ -30,22 +30,39 @@ if (env.name !== "production") {
   app.setPath("userData", `${userDataPath} (${env.name})`);
 }
 
+function setTrayImage(k) {
+  tray.setImage(trayImages[k])
+}
+
 app.on("ready", () => {
 
   setApplicationMenu();
 
   app.setAsDefaultProtocolClient('heartlist')
+  app.requestSingleInstanceLock()
 
   config = require('./services/config')
+
+  globalShortcut.register('CommandOrControl+Shift+K', () => {
+    setTrayImage('pending')
+    mainWindow.webContents.send('shortcut')
+  })
+
   if (env.name === "development") {
     // config.openInEditor()
     // config.clear()
   }
 
   // Tray
-  image = nativeImage.createFromPath(`${__dirname}/heart.png`)
-  image.isMacTemplateImage = true
-  tray = new Tray(image)
+  trayImages = {
+    base: nativeImage.createFromPath(`${__dirname}/static/heart.png`),
+    pending: nativeImage.createFromPath(`${__dirname}/static/heart-pending.png`),
+    success: nativeImage.createFromPath(`${__dirname}/static/heart-success.png`)
+  }
+  // trayImages.base.isMacTemplateImage = true
+  // trayImages.pending.isMacTemplateImage = true
+  // trayImages.success.isMacTemplateImage = true
+  tray = new Tray(trayImages.base)
   tray.on('click', function() {
     toggleWindow()
   })
@@ -158,14 +175,18 @@ const showUserAuthWindow = () => {
   
 }
 
+app.on('browser-window-blur', (e, win) => {
+  if (env === 'production')
+    win.hide()
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregister('CommandOrControl+Shift+K')
+})
+
 app.on("window-all-closed", () => {
   app.quit();
 });
-
-// Listen for requests to open window
-ipcMain.on('open-window', (event, arg) => {
-  showMainWindow()
-})
 
 ipcMain.handle('getConfig', (e, key) => {
   if (key === undefined) {
@@ -181,14 +202,15 @@ ipcMain.handle('setConfig', (e, arg) => {
   return config.store
 })
 
-ipcMain.on('launch-clicked', () => {
-  authWindow.close()
+ipcMain.on('track-was-hearted', () => {
+  setTrayImage('success')
+  setTimeout(() => {
+    setTrayImage('base')
+  }, 2000);
 })
 
 app.on('open-url', function (event, url) {
   event.preventDefault()
-  // authWin.close()
-  console.log('authorized')
   authWindow.webContents.send('authorized', url)
 })
 
