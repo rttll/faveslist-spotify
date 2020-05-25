@@ -575,14 +575,14 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
       this.props.Spotify.getTokens(authCode).then(tokens => {
         this.props.Spotify.setTokens(tokens);
-        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replaceConfig', {
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
           key: 'tokens',
           value: tokens
         });
       }).then(() => {
         return this.props.Spotify.setUser();
       }).then(user => {
-        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replaceConfig', {
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
           key: 'user',
           value: user
         }); // document.getElementById('message').textContent = 'success!'
@@ -595,7 +595,7 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
 
     _defineProperty(this, "savePlaylist", async () => {
       let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value);
-      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replaceConfig', {
+      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
         key: 'playlist',
         value: playlist
       });
@@ -686,7 +686,7 @@ apiRequest.interceptors.response.use(function (config) {
     };
     let refresh = await authRequest(authOptions);
     module.exports.setTokens(refresh.data);
-    ipcRenderer.invoke('updateConfig', {
+    ipcRenderer.invoke('update-config', {
       key: 'tokens',
       value: refresh.data
     }); // TODO resend api request here
@@ -746,7 +746,7 @@ async function apiErrorHandler(err) {
     return authRequest(authOptions).then(function (resp) {
       if (resp.status === 200) {
         module.exports.setTokens(resp.data);
-        ipcRenderer.invoke('updateConfig', {
+        ipcRenderer.invoke('update-config', {
           key: 'tokens',
           value: resp.data
         });
@@ -765,6 +765,11 @@ async function setConfig() {
   if (appConfig.playlist === null) {
     appConfig.playlist = await ipcRenderer.invoke('getConfig', 'playlist');
   }
+}
+
+async function trackAlreadyLiked(uri) {
+  hearts = await ipcRenderer.invoke('getConfig', 'hearts');
+  return hearts.indexOf(uri) > -1;
 }
 
 module.exports = {
@@ -831,16 +836,26 @@ module.exports = {
     };
     return await api(options);
   },
-  addRemoveTrack: async (trackURI, method) => {
+  addTrack: async trackURI => {
+    if (await trackAlreadyLiked(trackURI)) {
+      return false;
+    }
+
     await setConfig();
     let options = {
       url: `playlists/${appConfig.playlist.id}/tracks`,
-      method: method,
+      method: 'POST',
       data: {
         uris: [trackURI]
       }
     };
-    return await api(options);
+    let request = await api(options);
+
+    if (request.data.snapshot_id) {
+      return true;
+    } else {
+      return false;
+    }
   },
   player: async () => {
     let request = await api({

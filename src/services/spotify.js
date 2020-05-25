@@ -49,7 +49,7 @@ apiRequest.interceptors.response.use(function(config) {
     };
     let refresh = await authRequest(authOptions)
     module.exports.setTokens(refresh.data)
-    ipcRenderer.invoke('updateConfig', {key: 'tokens', value: refresh.data})
+    ipcRenderer.invoke('update-config', {key: 'tokens', value: refresh.data})
     // TODO resend api request here
   } else {
     return error.response
@@ -107,7 +107,7 @@ async function apiErrorHandler(err) {
     return authRequest(authOptions).then(function(resp) {
       if (resp.status === 200) {
         module.exports.setTokens(resp.data)
-        ipcRenderer.invoke('updateConfig', {key: 'tokens', value: resp.data})
+        ipcRenderer.invoke('update-config', {key: 'tokens', value: resp.data})
         return resp.data
         // api(currentRequestOptions)
       } else {
@@ -126,6 +126,13 @@ async function setConfig() {
     appConfig.playlist = await ipcRenderer.invoke('getConfig', 'playlist')
   }
 }
+
+async function trackAlreadyLiked(uri) {
+  hearts = await ipcRenderer.invoke('getConfig', 'hearts')
+  return hearts.indexOf(uri) > -1
+}
+
+
 
 module.exports = {
   init: () => {
@@ -201,16 +208,24 @@ module.exports = {
     }
     return await api(options)
   },
-  addRemoveTrack: async (trackURI, method) => {
+  addTrack: async (trackURI) => {
+    if ( await trackAlreadyLiked(trackURI) ) {
+      return false
+    }
     await setConfig()
     let options = {
       url: `playlists/${appConfig.playlist.id}/tracks`,
-      method: method,
+      method: 'POST',
       data: {
         uris: [trackURI]
       }
     }
-    return await api(options)
+    let request = await api(options)
+    if (request.data.snapshot_id) {
+      return true
+    } else {
+      return false
+    }
   },
   player: async () => {
     let request = await api({url: 'me/player'})

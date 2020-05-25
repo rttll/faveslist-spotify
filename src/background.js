@@ -89,6 +89,7 @@ app.on("ready", () => {
   } else {
     showUserAuthWindow()
   }
+
 });
 
 
@@ -206,15 +207,15 @@ ipcMain.handle('getConfig', (e, key) => {
 })
 
 function updateConfig(arg) {
-  let storeString = JSON.stringify(config.store)
-  let currentStore = JSON.parse(storeString)
-  let current = currentStore[arg.key]
-  if (currentStore[arg.key].isArray()) {
-    config.set(current.push(arg.value))
+  let current = JSON.parse(
+    JSON.stringify(config.get(arg.key))
+  )
+  if (Array.isArray(current)) {
+    current.push(arg.value)
+    config.set(arg.key, current)
   } else {
     config.set(arg.key, {...current, ...arg.value})
   }
-
   return config.store
 }
 
@@ -223,19 +224,14 @@ function replaceConfig(arg) {
   return config.store
 }
 
-ipcMain.handle('replaceConfig', (e, arg) => {
+ipcMain.handle('replace-config', (e, arg) => {
   return replaceConfig(arg)
 })
 
-ipcMain.on('track-was-hearted', (e, uri) => {
-  setTrayImage('success')
-  updateConfig({key: 'hearts', value: uri})
-  setTimeout(() => {
-    setTrayImage('base')
-  }, 2000);
+ipcMain.handle('update-config', (e, arg) => {
+  return updateConfig(arg)
 })
 
-ipcMain.on('remote-tracklist', (e, spotifyResponse) => {
-  let tracks = spotifyResponse.data.items.map(obj => obj.track.uri)
-  replaceConfig({key: 'hearts', value: tracks})
+ipcMain.on('set-tray-image', (e, key) => {
+  setTrayImage(key)
 })

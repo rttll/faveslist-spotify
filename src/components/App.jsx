@@ -65,11 +65,14 @@ export default class App extends Component {
   heartClicked = async function(e) {
     await this.hydrateTrack()
     if (this.state.hasTrack) {
-      let method = this.state.hearted ? 'DELETE' : 'POST';
       try {
-        await this.Spotify.addRemoveTrack(this.state.item.uri, method)
-        this.setState({hearted: !this.state.hearted})
-        return true
+        let added = await this.Spotify.addTrack(this.state.item.uri)
+        if (added) {
+          this.setState({hearted: true})
+          return this.state.item
+        } else {
+          return false
+        }
       } catch (error) {
         console.log(error)      
       }

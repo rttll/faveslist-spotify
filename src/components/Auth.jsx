@@ -29,11 +29,11 @@ export default class App extends Component {
     this.props.Spotify.getTokens(authCode)
       .then( (tokens) => {
         this.props.Spotify.setTokens(tokens)
-        ipcRenderer.invoke('replaceConfig', {key: 'tokens', value: tokens})
+        ipcRenderer.invoke('replace-config', {key: 'tokens', value: tokens})
       }).then(() => {
         return this.props.Spotify.setUser()
       }).then((user) => {
-        ipcRenderer.invoke('replaceConfig', {key: 'user', value: user})
+        ipcRenderer.invoke('replace-config', {key: 'user', value: user})
         // document.getElementById('message').textContent = 'success!'
       }).catch((err) => {
         console.log(err)
@@ -44,7 +44,7 @@ export default class App extends Component {
 
   savePlaylist = async () => {
     let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value)
-    ipcRenderer.invoke('replaceConfig', {key: 'playlist', value: playlist})
+    ipcRenderer.invoke('replace-config', {key: 'playlist', value: playlist})
   }
 
   render() {

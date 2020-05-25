@@ -16,7 +16,8 @@ let AppMethods;
 
 ipcRenderer.on('app-init', async () => {
   let response = await Spotify.getHeartlistTracks()
-  ipcRenderer.send('remote-tracklist', response)
+  let tracks = response.data.items.map(obj => obj.track.uri)
+  ipcRenderer.invoke('replace-config', {key: 'hearts', value: tracks})
   init()
 })
 
@@ -27,10 +28,15 @@ ipcRenderer.on('window-toggled', (e, arg) => {
 })
 
 ipcRenderer.on('shortcut', async () => {
-  let liked = await AppMethods.heartClicked()
-  if (liked) {
-    ipcRenderer.send('track-was-hearted', liked.uri)
+  ipcRenderer.send('set-tray-image', 'pending')
+  let added = await AppMethods.heartClicked()
+  if (added) {
+    ipcRenderer.invoke('update-config', {key: 'hearts', value: added.uri})
   }
+  ipcRenderer.send('set-tray-image', 'success')
+  setTimeout(() => {
+    ipcRenderer.send('set-tray-image', 'base')
+  }, 2000);
 })
 
 async function init() {
