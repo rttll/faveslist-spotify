@@ -142,10 +142,10 @@ const setMainWindowPosition = () => {
 }
 
 const toggleWindow = () => {
+
   if (mainWindow.isVisible()) {
     mainWindow.hide()
   } else {
-    // This will call getTrack()
     mainWindow.webContents.send('window-toggled', 'open')
     showMainWindow()
   }
@@ -177,8 +177,13 @@ const showUserAuthWindow = () => {
 }
 
 app.on('browser-window-blur', (e, win) => {
-  if (env === 'production')
+  if (env === 'production') {
     win.hide()
+  } else {
+    if ( !win.webContents.isDevToolsOpened() ) {
+      win.hide()
+    }
+  }
 })
 
 app.on('will-quit', () => {
@@ -192,10 +197,6 @@ app.on("window-all-closed", () => {
 app.on('open-url', function (event, url) {
   event.preventDefault()
   authWindow.webContents.send('authorized', url)
-})
-
-app.on('second-instance', (event, argv, cwd) => {
-  console.log('secon')
 })
 
 ipcMain.handle('getConfig', (e, key) => {
