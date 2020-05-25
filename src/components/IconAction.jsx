@@ -5,20 +5,23 @@ export default function IconAction(props) {
   const iconStyle = function() {
     let style = {
       fill: 'white',
-      stroke: 'black'
+      stroke: '#2d3748' // bg-gray-800
     }
     if (props.isHearted) {
       style = {
-        fill: 'black',
-        stroke: 'black'
+        fill: '#2d3748',
+        stroke: '#2d3748'
       }
     }
     return style
   }
 
   return (
-    <div class="h-full px-4 flex cursor-pointer hover:bg-gray-800" onClick={this.props.onClick}>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 825.73 755.65" class="h-6 m-auto">
+    <div class="col-span-2 h-full px-3 flex">
+      <svg xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 825.73 755.65" 
+        class="h-6 m-auto cursor-pointer"
+        onClick={this.props.onClick} >
         <path
           fill={iconStyle().fill}
           stroke={iconStyle().stroke}

@@ -106,12 +106,12 @@ export default class App extends Component {
         <div class="bg-gray-200 flex-grow">
           <div class="flex">
             <Image state={this.state} />
-            <div class="w-full flex justify-between items-center">
-              <div class="px-3 py-2">
-                <div class="font-bold text-md truncate">
+            <div class="w-full grid grid-cols-12">
+              <div class="col-span-10 pl-3 py-2">
+                <div class="text-gray-800 font-bold text-md select-none truncate">
                   {this.trackName()}
                 </div>
-                <p class="text-gray-700 text-base">
+                <p class="text-gray-800 text-base select-none">
                   {this.artists()}
                 </p>
               </div>
