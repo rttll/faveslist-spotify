@@ -6,6 +6,7 @@ import App from './components/App.jsx'
 // Small helpers you might want to keep
 import "./helpers/context_menu.js";
 import "./helpers/external_links.js";
+import { ipcMain } from 'electron';
 
 const {ipcRenderer, shell} = require('electron')
 const {globalShortcut} = require('electron').remote
@@ -42,6 +43,7 @@ ipcRenderer.on('shortcut', async () => {
 async function init() {
   render(
     <App
+    ipcRenderer={ ipcRenderer }
     Spotify={ Spotify }
     ref={app => AppMethods = app}
     />,

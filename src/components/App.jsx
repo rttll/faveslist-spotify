@@ -20,6 +20,7 @@ export default class App extends Component {
   constructor(props) {
     super(props)
     this.Spotify = props.Spotify
+    this.ipcRenderer = props.ipcRenderer
     this.heartClicked = this.heartClicked.bind(this)
   }
 
@@ -46,17 +47,24 @@ export default class App extends Component {
 
   async hydrateTrack() {
     try {
+      let update;
+      let current = JSON.parse(
+        JSON.stringify(this.state)
+      )
+      current.loading = false
       let currentlyPlaying = await this.Spotify.currentlyPlaying()
-      let stateString = JSON.stringify(this.state)
-      let update = JSON.parse(stateString)
-      update.loading = false
       if (currentlyPlaying.item) {
-        update.hasTrack = true
-        update.item = currentlyPlaying.item
+        let hearts = await this.ipcRenderer.invoke('getConfig', 'hearts')
+        update = {
+          hearted: hearts.indexOf(currentlyPlaying.item.uri) > -1,
+          hasTrack: true,
+          item: currentlyPlaying.item
+        }
       } else {
+        update = current
         update.item.name = 'No track playing'
       }
-      await this.setState(update)
+      await this.setState({...current, ...update})
     } catch (error) {
       console.log(error)
     }
