@@ -35,7 +35,7 @@ function setTrayImage(k) {
 }
 
 app.on("ready", () => {
-
+  
   setApplicationMenu();
 
   app.setAsDefaultProtocolClient('heartlist')
@@ -64,14 +64,18 @@ app.on("ready", () => {
   // trayImages.success.isMacTemplateImage = true
   tray = new Tray(trayImages.base)
   tray.on('click', function() {
-    toggleWindow()
+    if (mainWindow !== undefined)
+      toggleWindow()
   })
 
-  createMainWindow()
-
   authWindow = createWindow('auth', {
-    width: 1300,
-    height: 800,
+    backgroundColor: '#b794f4',
+    width: 750,
+    height: 620,
+    center: true,
+    transparent: true,
+    resizable: false,
+    titleBarStyle: 'hidden',
     show: false,
     webPreferences: {
       nodeIntegration: true
@@ -85,22 +89,21 @@ app.on("ready", () => {
       playlistID = store.playlist.id;
 
   if (access && refresh && userID && playlistID) {
-    showMainWindow()
+    createMainWindow()
   } else {
     showUserAuthWindow()
   }
 
 });
 
-
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
     width: 350,
-    // height: 130,
     height: 64,
-    show: false,
+    show: true,
     frame: false,
     transparent: true,
+    resizable: env.name === "development",
     webPreferences: {
       nodeIntegration: true
     }
@@ -122,8 +125,11 @@ const createMainWindow = () => {
     // mainWindow.openDevTools({mode: 'detach'});
   }
 
+  mainWindow.on('blur', () => {
+    mainWindow.hide()
+  })
+
   setMainWindowPosition()
-  showMainWindow()
     
 }
 
@@ -169,22 +175,21 @@ const showUserAuthWindow = () => {
     // authWindow.openDevTools()
     //{mode: 'detach'});
   }
+
   authWindow.show()
+
   authWindow.webContents.on('did-finish-load', () => {
-    authWindow.webContents.send('did-finish-load')
+    let store = config.store;
+    let state = {
+      authorize: Object.keys(store.tokens).length < 1,
+      playlist: Object.keys(store.playlist).length < 1,
+      done: true 
+    }    
+    authWindow.webContents.send('did-finish-load', state)
   })
   
 }
 
-app.on('browser-window-blur', (e, win) => {
-  if (env === 'production') {
-    win.hide()
-  } else {
-    if ( !win.webContents.isDevToolsOpened() ) {
-      win.hide()
-    }
-  }
-})
 
 app.on('will-quit', () => {
   globalShortcut.unregister('CommandOrControl+Shift+K')
@@ -235,4 +240,18 @@ ipcMain.handle('update-config', (e, arg) => {
 
 ipcMain.on('set-tray-image', (e, key) => {
   setTrayImage(key)
+})
+
+
+ipcMain.handle('get-setup-state', () => {
+  let store = config.store;
+  return {
+    authorize: store.tokens.access_token,
+    playist: store.playlist.id
+  }
+})
+
+ipcMain.on('setup-complete', (e, key) => {
+  authWindow.hide()
+  createMainWindow()
 })

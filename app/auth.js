@@ -518,15 +518,53 @@ ipcRenderer.on('authorized', (event, data) => {
   let params = new URLSearchParams(data.split('?').pop());
   AuthMethods.spotifyWasAuthorized(params);
 });
+ipcRenderer.on('did-finish-load', (e, state) => {
+  loadApp(state);
+});
 
 function launchClicked() {
   ipcRenderer.send('launch-clicked');
 }
 
-Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(_components_Auth_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], {
-  Spotify: Spotify,
-  ref: app => AuthMethods = app
-}), document.getElementById('app'));
+function loadApp(state) {
+  Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(_components_Auth_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    setupState: state,
+    Spotify: Spotify,
+    ref: app => AuthMethods = app
+  }), document.getElementById('app'));
+}
+/* 
+
+  inspect element 
+  
+  
+  */
+
+
+const {
+  remote
+} = __webpack_require__(/*! electron */ "electron");
+
+const {
+  Menu,
+  MenuItem
+} = remote;
+let rightClickPosition;
+const menu = new Menu();
+menu.append(new MenuItem({
+  label: 'Inspect Element',
+  click: () => {
+    remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y);
+  }
+}));
+window.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  rightClickPosition = {
+    x: e.x,
+    y: e.y
+  };
+  menu.popup(remote.getCurrentWindow());
+}, false);
 
 /***/ }),
 
@@ -549,15 +587,10 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 
 class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
-  constructor(...args) {
-    super(...args);
+  constructor(props) {
+    super(props);
 
-    _defineProperty(this, "state", {
-      spotifyState: null,
-      playlist: {
-        name: null
-      }
-    });
+    _defineProperty(this, "playlistInput", Object(preact__WEBPACK_IMPORTED_MODULE_0__["createRef"])());
 
     _defineProperty(this, "authorize", () => {
       const array = new Uint32Array(1);
@@ -585,44 +618,123 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
         electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
           key: 'user',
           value: user
-        }); // document.getElementById('message').textContent = 'success!'
+        });
+        this.setState({
+          step: 'playlist'
+        });
       }).catch(err => {
         console.log(err);
       });
     });
 
-    _defineProperty(this, "playlistInput", Object(preact__WEBPACK_IMPORTED_MODULE_0__["createRef"])());
-
     _defineProperty(this, "savePlaylist", async () => {
-      let playlist = await this.props.Spotify.setPlaylist(this.playlistInput.current.value);
-      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
-        key: 'playlist',
-        value: playlist
-      });
+      let val = this.playlistInput.current.value.trim();
+
+      if (val.length > 0) {
+        let playlist = await this.props.Spotify.setPlaylist(val);
+        electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
+          key: 'playlist',
+          value: playlist
+        });
+        this.setState({
+          step: 'done'
+        });
+      }
     });
+
+    let step;
+
+    for (let k in props.setupState) {
+      if (props.setupState[k]) {
+        step = k;
+        break;
+      }
+    }
+
+    this.state = {
+      spotifyState: null,
+      step: step,
+      playlist: {
+        name: null
+      }
+    };
   }
 
   componentDidMount() {
     this.props.Spotify.init();
   }
 
+  done() {
+    electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].send('setup-complete');
+  }
+
+  getClass(step) {
+    let klass = step === this.state.step ? 'active' : 'hidden';
+    return klass;
+  }
+
+  navState(step) {
+    let klass = step === this.state.step ? 'bg-purple-900' : 'border border-purple-900';
+    return klass;
+  }
+
   render() {
     return Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      class: "p-4"
+      class: "flex flex-col justify-between h-screen pt-4"
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      class: ""
-    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
-      onClick: this.authorize,
-      class: "p-2 border"
-    }, "Authorize!"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("br", null), " ", Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("br", null)), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("input", {
+      class: "mx-auto max-w-sm my-4 text-center"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
+      class: "uppercase"
+    }, "Heartlist")), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      class: "p-4 flex flex-col justify-center rounded-sm w-screen mx-auto text-center flex-grow overflow-hidden"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: '-mt-16 w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('authorize')
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
+      class: "text-3xl"
+    }, "Connect to Spotify"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
+      class: "mb-6 text-base"
+    }, "Heartlist needs access to create and manage playlist on your Spotify account."), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
+      class: "bg-purple-600 text-white p-4 px-16 border rounded-full outline-none focus:shadow-outline",
+      onClick: this.authorize
+    }, "Authorize"))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: '-mt-16 w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('playlist')
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
+      class: "text-3xl"
+    }, "Create Playlist"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
+      class: "mb-6 text-base"
+    }, "Heartlist keeps all your faves in a playlist on Spotify."), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      class: "p-4"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("input", {
       type: "text",
+      class: "bg-gray-100 border rounded-sm block w-full p-4 outline-none focus:shadow-outline",
+      placeholder: "Faves",
       ref: this.playlistInput,
-      value: this.state.playlist.name,
-      class: "p-4 border rounded"
-    }), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
-      class: "p-4 rounded border",
+      value: this.state.playlist.name
+    })), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
+      class: "bg-purple-600 text-white p-4 px-16 border rounded-full outline-none focus:shadow-outline",
       onClick: this.savePlaylist
-    }, "Click"));
+    }, "Create Playlist"))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: '-mt-16 w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('done')
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
+      class: "text-3xl"
+    }, "Done!"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
+      class: "mb-6 text-base"
+    }, "Check out more settings in", Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("a", {
+      href: ""
+    }, "Settings")), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
+      class: "bg-purple-600 text-white p-4 px-16 border rounded-full outline-none focus:shadow-outline",
+      onClick: this.done
+    }, "Open Faveslist")))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      class: "mx-auto max-w-sm text-center"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("nav", {
+      class: "flex space-x-1 my-8 mx-auto w-8"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: 'h-2 w-2 rounded-full ' + this.navState('authorize')
+    }), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: 'h-2 w-2 rounded-full ' + this.navState('playlist')
+    }), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: 'h-2 w-2 rounded-full ' + this.navState('done')
+    }))));
   }
 
 }

@@ -11,14 +11,48 @@ ipcRenderer.on('authorized', (event, data) => {
   AuthMethods.spotifyWasAuthorized(params)
 })
 
+
+ipcRenderer.on('did-finish-load', (e, state) => {
+  loadApp(state)
+})
+
 function launchClicked() {
   ipcRenderer.send('launch-clicked')
 }
 
-render(
-  <Auth
-    Spotify={Spotify}
-    ref={app => AuthMethods = app} 
-  />, 
-    document.getElementById('app')
-);
+function loadApp(state) {
+  render(
+    <Auth
+      setupState={state}
+      Spotify={Spotify}
+      ref={app => AuthMethods = app} 
+    />, 
+      document.getElementById('app')
+
+  );
+}
+
+/* 
+
+  inspect element 
+  
+  
+  */
+
+ const {remote} = require('electron')
+ const {Menu, MenuItem} = remote
+ let rightClickPosition;
+ const menu = new Menu()
+ menu.append(new MenuItem({
+   label: 'Inspect Element',
+   click: () => {
+     remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
+   }
+ }))
+ 
+ window.addEventListener('contextmenu', (e) => {
+   e.preventDefault()
+   rightClickPosition = {x: e.x, y: e.y}
+   menu.popup(remote.getCurrentWindow())
+ }, false)
+ 
