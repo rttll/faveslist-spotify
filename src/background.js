@@ -74,8 +74,8 @@ app.on("ready", () => {
     height: 620,
     center: true,
     transparent: true,
-    resizable: false,
-    titleBarStyle: 'hidden',
+    resizable: env.name === "development",
+    // titleBarStyle: 'hidden',
     show: false,
     webPreferences: {
       nodeIntegration: true
@@ -172,8 +172,7 @@ const showUserAuthWindow = () => {
   );
   
   if (env.name === "development") {
-    // authWindow.openDevTools()
-    //{mode: 'detach'});
+    // authWindow.openDevTools({mode: 'detach'});
   }
 
   authWindow.show()

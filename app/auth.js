@@ -104,6 +104,24 @@ module.exports = exports;
 
 /***/ }),
 
+/***/ "./node_modules/css-loader/dist/cjs.js!../../node_modules/postcss-loader/src/index.js?!./src/stylesheets/loading.css":
+/*!**********************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js!/Users/adrian/node_modules/postcss-loader/src??postcss!./src/stylesheets/loading.css ***!
+  \**********************************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// Imports
+var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(/*! ../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+exports = ___CSS_LOADER_API_IMPORT___(false);
+// Module
+exports.push([module.i, ".loading:before {\n  content: \"\";\n  width: 18px;\n  height: 18px;\n  border: 2px solid transparent;\n  border-top-color: #4d4d4d;\n  border-left-color: #4d4d4d;\n  border-radius: 50%;\n  display: block;\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  transform: translate3d(-50%, -50%, 0);\n  -webkit-animation: .45s ease-in infinite spin;\n          animation: .45s ease-in infinite spin;\n  z-index: 1;\n}\n\n@-webkit-keyframes spin {\n  0% {\n    transform: rotate(0deg)\n  }\n\n  100% {\n    transform: rotate(360deg)\n  }\n}\n\n@keyframes spin {\n  0% {\n    transform: rotate(0deg)\n  }\n\n  100% {\n    transform: rotate(360deg)\n  }\n}", ""]);
+// Exports
+module.exports = exports;
+
+
+/***/ }),
+
 /***/ "./node_modules/css-loader/dist/runtime/api.js":
 /*!*****************************************************!*\
   !*** ./node_modules/css-loader/dist/runtime/api.js ***!
@@ -528,6 +546,7 @@ function launchClicked() {
 
 function loadApp(state) {
   Object(preact__WEBPACK_IMPORTED_MODULE_0__["render"])(Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])(_components_Auth_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    ipcRenderer: ipcRenderer,
     setupState: state,
     Spotify: Spotify,
     ref: app => AuthMethods = app
@@ -582,7 +601,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! electron */ "electron");
 /* harmony import */ var electron__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(electron__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _stylesheets_loading_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../stylesheets/loading.css */ "./src/stylesheets/loading.css");
+/* harmony import */ var _stylesheets_loading_css__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_stylesheets_loading_css__WEBPACK_IMPORTED_MODULE_2__);
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 
 
 
@@ -595,7 +617,7 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
     _defineProperty(this, "authorize", () => {
       const array = new Uint32Array(1);
       this.state.spotifyState = window.crypto.getRandomValues(array)[0].toString();
-      this.props.Spotify.authorize(this.state.spotifyState);
+      this.Spotify.authorize(this.state.spotifyState);
     });
 
     _defineProperty(this, "spotifyWasAuthorized", params => {
@@ -606,14 +628,14 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
         return false;
       }
 
-      this.props.Spotify.getTokens(authCode).then(tokens => {
-        this.props.Spotify.setTokens(tokens);
+      this.Spotify.getTokens(authCode).then(tokens => {
+        this.Spotify.setTokens(tokens);
         electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
           key: 'tokens',
           value: tokens
         });
       }).then(() => {
-        return this.props.Spotify.setUser();
+        return this.Spotify.setUser();
       }).then(user => {
         electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
           key: 'user',
@@ -627,11 +649,51 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
       });
     });
 
+    _defineProperty(this, "showUserPlaylists", async () => {
+      this.setState({
+        playlistsContainerClass: ''
+      });
+      await this.setState({
+        playlists: []
+      });
+      new Promise((resolve, reject) => {
+        this.getPlaylists(resolve, reject);
+      }).then(() => {
+        this.setState({
+          playlists: resp
+        });
+      }).catch(err => {
+        console.log(err);
+      });
+    });
+
+    _defineProperty(this, "hideUserPlaylists", () => {
+      this.setState({
+        playlistsContainerClass: 'hidden'
+      });
+    });
+
+    _defineProperty(this, "saveExisting", async e => {
+      let playlist = await this.Spotify.getPlaylist(e.currentTarget.dataset.id);
+      delete playlist.tracks;
+      electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
+        key: 'playlist',
+        value: playlist
+      });
+      this.setState({
+        showPlaylists: false
+      }, () => {
+        this.setState({
+          step: 'done'
+        });
+      });
+    });
+
     _defineProperty(this, "savePlaylist", async () => {
       let val = this.playlistInput.current.value.trim();
 
       if (val.length > 0) {
-        let playlist = await this.props.Spotify.setPlaylist(val);
+        let playlist = await this.Spotify.setPlaylist(val);
         electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('replace-config', {
           key: 'playlist',
           value: playlist
@@ -642,6 +704,8 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
       }
     });
 
+    this.Spotify = this.props.Spotify;
+    this.ipcRenderer = this.props.ipcRenderer;
     let step;
 
     for (let k in props.setupState) {
@@ -656,12 +720,34 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
       step: step,
       playlist: {
         name: null
-      }
+      },
+      playlistsContainerClass: 'hidden',
+      playlistsLoadingClass: '',
+      playlists: []
     };
   }
 
   componentDidMount() {
-    this.props.Spotify.init();
+    this.Spotify.init();
+  }
+
+  getPlaylists(resolve, reject, url = undefined) {
+    this.Spotify.getPlaylists(url).then(async resp => {
+      var current = JSON.parse(JSON.stringify(this.state.playlists));
+      var userID = await electron__WEBPACK_IMPORTED_MODULE_1__["ipcRenderer"].invoke('getConfig', 'user.id');
+      this.setState({
+        playlists: current.concat(resp.data.items.filter(item => item.owner.id === userID))
+      });
+
+      if (resp.data.items.length < 20) {
+        resolve();
+      } else {
+        var url = resp.data.next;
+        this.getPlaylists(resolve, reject, url);
+      }
+    }).catch(err => {
+      reject(err);
+    });
   }
 
   done() {
@@ -682,13 +768,13 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
     return Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
       class: "flex flex-col justify-between h-screen pt-4"
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      class: "mx-auto max-w-sm my-4 text-center"
+      class: "mx-auto max-w-sm text-center"
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
       class: "uppercase"
     }, "Heartlist")), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      class: "p-4 flex flex-col justify-center rounded-sm w-screen mx-auto text-center flex-grow overflow-hidden"
+      class: "relative p-4 flex flex-col justify-center rounded-sm w-screen mx-auto text-center flex-grow overflow-hidden"
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      className: '-mt-16 w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('authorize')
+      className: ' w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('authorize')
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
       class: "text-3xl"
     }, "Connect to Spotify"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
@@ -697,8 +783,10 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
       class: "bg-purple-600 text-white p-4 px-16 border rounded-full outline-none focus:shadow-outline",
       onClick: this.authorize
     }, "Authorize"))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      className: '-mt-16 w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('playlist')
-    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
+      className: 'relative  w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('playlist')
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      class: ""
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
       class: "text-3xl"
     }, "Create Playlist"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
       class: "mb-6 text-base"
@@ -707,14 +795,35 @@ class App extends preact__WEBPACK_IMPORTED_MODULE_0__["Component"] {
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("input", {
       type: "text",
       class: "bg-gray-100 border rounded-sm block w-full p-4 outline-none focus:shadow-outline",
-      placeholder: "Faves",
+      placeholder: "Enter playlist name",
       ref: this.playlistInput,
       value: this.state.playlist.name
     })), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("button", {
       class: "bg-purple-600 text-white p-4 px-16 border rounded-full outline-none focus:shadow-outline",
       onClick: this.savePlaylist
-    }, "Create Playlist"))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
-      className: '-mt-16 w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('done')
+    }, "Create Playlist"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
+      className: "mt-2 text-sm"
+    }, "or\xA0", Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("a", {
+      href: "#",
+      onClick: this.showUserPlaylists,
+      class: "text-purple-400"
+    }, "choose from existing"))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: `${this.state.playlistsContainerClass} absolute bg-gray-100 inset-x-0 bottom-0 top-0 flex flex-col transition-all ease-in duration-75 p-16`
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: "w-full flex flex-col items-left overflow-y-auto"
+    }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("ul", {
+      class: "text-left flex-grow loading"
+    }, this.state.playlists.map(p => Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("li", {
+      "data-id": p.id,
+      key: p.id,
+      class: "cursor-pointer z-10 relative bg-gray-100 hover:text-purple-400",
+      onClick: this.saveExisting
+    }, p.name)))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("a", {
+      href: "#",
+      class: "text-sm text-right block mt-2 text-purple-400",
+      onClick: this.hideUserPlaylists
+    }, "Cancel"))), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", {
+      className: ' w-2/3 px-16 flex flex-col justify-center mx-auto bg-gray-100 shadow-lg flex-grow h-full ' + this.getClass('done')
     }, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("div", null, Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("h1", {
       class: "text-3xl"
     }, "Done!"), Object(preact__WEBPACK_IMPORTED_MODULE_0__["h"])("p", {
@@ -941,6 +1050,26 @@ module.exports = {
     let playlist = await api(options);
     return playlist.data;
   },
+  getPlaylist: async id => {
+    await setConfig();
+    let options = {
+      url: `playlists/${id}`
+    };
+    let request = await api(options);
+    return request.data;
+  },
+  getPlaylists: async url => {
+    if (url === undefined) {
+      let userID = await ipcRenderer.invoke('getConfig', 'user.id');
+      url = `users/${userID}/playlists`;
+    }
+
+    let options = {
+      url: url,
+      method: 'GET'
+    };
+    return await api(options);
+  },
   getHeartlistTracks: async () => {
     await setConfig();
     let options = {
@@ -995,6 +1124,35 @@ module.exports = {
 
 var api = __webpack_require__(/*! ../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
             var content = __webpack_require__(/*! !../../node_modules/css-loader/dist/cjs.js!../../../../node_modules/postcss-loader/src??postcss!./app.css */ "./node_modules/css-loader/dist/cjs.js!../../node_modules/postcss-loader/src/index.js?!./src/stylesheets/app.css");
+
+            content = content.__esModule ? content.default : content;
+
+            if (typeof content === 'string') {
+              content = [[module.i, content, '']];
+            }
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = api(content, options);
+
+
+
+module.exports = content.locals || {};
+
+/***/ }),
+
+/***/ "./src/stylesheets/loading.css":
+/*!*************************************!*\
+  !*** ./src/stylesheets/loading.css ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var api = __webpack_require__(/*! ../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+            var content = __webpack_require__(/*! !../../node_modules/css-loader/dist/cjs.js!../../../../node_modules/postcss-loader/src??postcss!./loading.css */ "./node_modules/css-loader/dist/cjs.js!../../node_modules/postcss-loader/src/index.js?!./src/stylesheets/loading.css");
 
             content = content.__esModule ? content.default : content;
 

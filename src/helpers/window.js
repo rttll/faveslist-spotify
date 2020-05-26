@@ -77,6 +77,7 @@ export default (name, options) => {
   state = ensureVisibleOnSomeDisplay(restore());
 
   win = new BrowserWindow(Object.assign({}, options));
+  // win = new BrowserWindow(Object.assign({}, options, state));
 
   win.on("close", saveState);
   // win.on("blur", () => {win.hide()})

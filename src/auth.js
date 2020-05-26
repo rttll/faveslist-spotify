@@ -23,6 +23,7 @@ function launchClicked() {
 function loadApp(state) {
   render(
     <Auth
+      ipcRenderer={ipcRenderer}
       setupState={state}
       Spotify={Spotify}
       ref={app => AuthMethods = app} 

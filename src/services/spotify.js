@@ -133,7 +133,6 @@ async function trackAlreadyLiked(uri) {
 }
 
 
-
 module.exports = {
   init: () => {
     return ipcRenderer.invoke('getConfig', 'tokens').then((tokens) => {
@@ -199,7 +198,26 @@ module.exports = {
     }
     let playlist = await api(options)
     return playlist.data
-
+    
+  },
+  getPlaylist: async (id) => {
+    await setConfig()
+    let options = {
+      url: `playlists/${id}`
+    }
+    let request = await api(options)
+    return request.data
+  },
+  getPlaylists: async (url) => {
+    if (url === undefined) {
+      let userID = await ipcRenderer.invoke('getConfig', 'user.id')
+      url = `users/${userID}/playlists`
+    }
+    let options = {
+      url: url,
+      method: 'GET'
+    }
+    return await api(options)
   },
   getHeartlistTracks: async () => {
     await setConfig()
