@@ -1,15 +1,15 @@
 {
-  "name": "electron-boilerplate",
-  "productName": "Electron Boilerplate",
-  "description": "Starter for your Electron application",
-  "version": "0.0.0",
+  "name": "heartlist",
+  "productName": "Heartlist",
+  "description": "Spotify faveslist manager for Mac",
+  "version": "0.0.1",
   "private": true,
-  "author": "Mr. Gumby <mr.gumby@example.com>",
-  "copyright": "© 2017, Gumby inc.",
-  "homepage": "http://example.com",
+  "author": "Adrian Cousens <a@thisadrian.com>",
+  "copyright": "© 2020, Adrian Cousens",
+  "homepage": "https://heartlist.thisadrian.com",
   "main": "app/background.js",
   "build": {
-    "appId": "com.example.electron-boilerplate",
+    "appId": "com.heartlist",
     "files": [
       "app/**/*",
       "node_modules/**/*",
