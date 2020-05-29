@@ -75,7 +75,7 @@ app.on("ready", () => {
     center: true,
     transparent: true,
     resizable: env.name === "development",
-    // titleBarStyle: 'hidden',
+    titleBarStyle: 'hidden',
     show: false,
     webPreferences: {
       nodeIntegration: true
