@@ -1,8 +1,7 @@
 const {ipcRenderer, shell} = require('electron')
 const qs = require('qs');
 const axios = require('axios')
-
-require('dotenv').config()
+const env = require("env");
 
 const redirectUri = 'heartlist://'
 const appConfig = {
@@ -14,7 +13,8 @@ const authRequest = axios.create({
   baseURL: 'https://accounts.spotify.com/'
 })
 
-const authHeader = 'Basic ' + new Buffer.from(process.env.CLIENT_ID + ':' + process.env.CLIENT_SECRET).toString('base64');
+console.log(env.CLIENT_ID)
+const authHeader = 'Basic ' + new Buffer.from(env.CLIENT_ID + ':' + env.CLIENT_SECRET).toString('base64');
 authRequest.defaults.headers.common['Authorization'] = authHeader
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
 
@@ -152,7 +152,7 @@ module.exports = {
       'playlist-read-collaborative'
     ].join(' ')
     const params = qs.stringify({
-        'client_id': process.env.CLIENT_ID,
+        'client_id': env.CLIENT_ID,
         'response_type': 'code',
         'scope': scope,
         'state': state,

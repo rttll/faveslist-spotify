@@ -1,4 +1,5 @@
 {
   "name": "production",
-  "description": "Add here any environment specific stuff you like."
+  "CLIENT_ID": "dfeed83a84d445d7b1a36ecc23eb5ac5",
+  "CLIENT_SECRET": "d9ca9517b3754d0f974ee4769f5720a9"
 }

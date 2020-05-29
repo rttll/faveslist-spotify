@@ -10,7 +10,9 @@ Thumbs.db
 /app/app.js
 /app/background.js
 /app/**/*.map
+/app/auth.js
 
 
 _graphics
 .env
+/config
