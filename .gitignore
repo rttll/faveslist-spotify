@@ -1,18 +1,5 @@
-node_modules
+_graphics/*
+dist/*
 .DS_Store
-Thumbs.db
-*.log
-
-/dist
-/temp
-
-# ignore everything in 'app' folder what had been generated from 'src' folder
-/app/app.js
-/app/background.js
-/app/**/*.map
-/app/auth.js
-
-
-_graphics
-.env
-/config
+secrets.json
+node_modules/*
