@@ -13,7 +13,6 @@ const authRequest = axios.create({
   baseURL: 'https://accounts.spotify.com/'
 })
 
-console.log(env.CLIENT_ID)
 const authHeader = 'Basic ' + new Buffer.from(env.CLIENT_ID + ':' + env.CLIENT_SECRET).toString('base64');
 authRequest.defaults.headers.common['Authorization'] = authHeader
 authRequest.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
