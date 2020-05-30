@@ -55,13 +55,11 @@ app.on("ready", () => {
 
   // Tray
   trayImages = {
-    base: nativeImage.createFromPath(`${__dirname}/assets/images/heart.png`),
-    pending: nativeImage.createFromPath(`${__dirname}/assets/images/heart-pending.png`),
-    success: nativeImage.createFromPath(`${__dirname}/assets/images/heart-success.png`)
+    base: nativeImage.createFromPath(`${__dirname}/assets/images/heartTemplate.png`),
+    pending: nativeImage.createFromPath(`${__dirname}/assets/images/heart-pendingTemplate.png`),
+    success: nativeImage.createFromPath(`${__dirname}/assets/images/heart-successTemplate.png`)
   }
-  // trayImages.base.isMacTemplateImage = true
-  // trayImages.pending.isMacTemplateImage = true
-  // trayImages.success.isMacTemplateImage = true
+
   tray = new Tray(trayImages.base)
   tray.on('click', function() {
     if (mainWindow !== undefined)
