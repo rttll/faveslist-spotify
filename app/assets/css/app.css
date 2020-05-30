@@ -19042,6 +19042,23 @@ video {
   transition-delay: 1000ms;
 }
 
+.bg-sea-green {
+  background-color: #d2f1f4;
+}
+
+.bg-hotpink {
+  background-color: #cc4c9b;
+}
+
+.text-hotpink {
+  color: #cc4c9b;
+}
+
+body, html {
+  font-family: Fira Sans, sans-serif;
+  colro: #4d4d4d;
+}
+
 @media (min-width: 640px) {
   .sm\:space-y-0 > :not(template) ~ :not(template) {
     --space-y-reverse: 0;

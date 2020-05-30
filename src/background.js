@@ -15,7 +15,7 @@ import createWindow from "./helpers/window";
 // in config/env_xxx.json file.
 import env from "env";
 
-let mainWindow, authWindow, tray, trayImages, config;
+let mainWindow, authWindow, tray, trayImage, config;
 
 const setApplicationMenu = () => {
   const menus = [editMenuTemplate];
@@ -30,21 +30,16 @@ if (env.name !== "production") {
   app.setPath("userData", `${userDataPath} (${env.name})`);
 }
 
-function setTrayImage(k) {
-  tray.setImage(trayImages[k])
-}
-
 app.on("ready", () => {
   
   setApplicationMenu();
 
-  app.setAsDefaultProtocolClient('heartlist')
+  app.setAsDefaultProtocolClient('faveslist')
   app.requestSingleInstanceLock()
 
   config = require('./services/config')
 
   globalShortcut.register('CommandOrControl+Shift+K', () => {
-    setTrayImage('pending')
     mainWindow.webContents.send('shortcut')
   })
 
@@ -54,20 +49,16 @@ app.on("ready", () => {
   }
 
   // Tray
-  trayImages = {
-    base: nativeImage.createFromPath(`${__dirname}/assets/images/heartTemplate.png`),
-    pending: nativeImage.createFromPath(`${__dirname}/assets/images/heart-pendingTemplate.png`),
-    success: nativeImage.createFromPath(`${__dirname}/assets/images/heart-successTemplate.png`)
-  }
+  const trayImage = nativeImage.createFromPath(`${__dirname}/assets/images/trayTemplate.png`)
 
-  tray = new Tray(trayImages.base)
+  tray = new Tray(trayImage)
   tray.on('click', function() {
     if (mainWindow !== undefined)
       toggleWindow()
   })
 
   authWindow = createWindow('auth', {
-    backgroundColor: '#b794f4',
+    backgroundColor: '#d2f1f4', // sea green
     width: 750,
     height: 620,
     center: true,
@@ -234,11 +225,6 @@ ipcMain.handle('replace-config', (e, arg) => {
 ipcMain.handle('update-config', (e, arg) => {
   return updateConfig(arg)
 })
-
-ipcMain.on('set-tray-image', (e, key) => {
-  setTrayImage(key)
-})
-
 
 ipcMain.handle('get-setup-state', () => {
   let store = config.store;
