@@ -1,5 +1,11 @@
 {
+<<<<<<< HEAD
   "name": "Heartlist",
+=======
+  "name": "faveslist",
+  "productName": "Faveslist",
+  "description": "Spotify faveslist helper, for Mac",
+>>>>>>> Update name again in package
   "version": "0.0.1",
 <<<<<<< HEAD
   "description": "Easily heart songs on Spotify",
@@ -13,10 +19,10 @@
   "private": true,
   "author": "Adrian Cousens <a@thisadrian.com>",
   "copyright": "© 2020, Adrian Cousens",
-  "homepage": "https://heartlist.thisadrian.com",
+  "homepage": "https://faveslist.thisadrian.com",
   "main": "app/background.js",
   "build": {
-    "appId": "com.heartlist",
+    "appId": "com.faveslist",
     "files": [
       "app/**/*",
       "node_modules/**/*",
@@ -26,9 +32,9 @@
       "buildResources": "resources"
     },
     "protocols": {
-      "name": "heartlist",
+      "name": "faveslist",
       "schemes": [
-        "heartlist"
+        "faveslist"
       ]
     },
     "mac": {
@@ -50,6 +56,7 @@
 >>>>>>> Update name and remove doc icon in package.json
   },
   "dependencies": {
+<<<<<<< HEAD
     "spotify-web-api-node": "^3.0"
   },
 <<<<<<< HEAD
@@ -59,6 +66,13 @@
     "postinstall": "install-app-deps",
     "pack": "build --dir",
     "dist": "build"
+=======
+    "electron-store": "^5.1.1",
+    "fs-jetpack": "^2.1.0",
+    "preact": "^10.4.2",
+    "axios": "^0.19.2",
+    "qs": "^6.9.4"
+>>>>>>> Update name again in package
   },
   "build": {
     "appId": "com.foo.heartlist",
