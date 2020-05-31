@@ -88,7 +88,7 @@ app.on("ready", () => {
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
     width: 350,
-    height: 64,
+    height: 128,
     show: true,
     frame: false,
     transparent: true,
