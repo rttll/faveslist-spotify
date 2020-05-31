@@ -89,7 +89,7 @@ const createMainWindow = () => {
   mainWindow = new BrowserWindow({
     width: 350,
     height: 128,
-    show: true,
+    show: false,
     frame: false,
     transparent: true,
     resizable: env.name === "development",
