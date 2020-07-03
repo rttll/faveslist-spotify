@@ -50,7 +50,6 @@ apiRequest.interceptors.request.use(async function (config) {
   return Promise.reject(error);
 });
 
-// TODO: this needs to then resend the api request
 apiRequest.interceptors.response.use(function(config) {
   // debugger
   return config
@@ -67,6 +66,8 @@ apiRequest.interceptors.response.use(function(config) {
     let refresh = await authRequest(authOptions)
     module.exports.setTokens(refresh.data)
     ipcRenderer.invoke('update-config', {key: 'tokens', value: refresh.data})
+    // Return/retry original
+    return await apiRequest({url: error.config.url})
   } else {
     return error.response
   }
@@ -98,43 +99,6 @@ async function api(options) {
     debugger
   }
 
-}
-
-async function apiErrorHandler(err) {
-  let data = {}
-  let status = null;
-  // The err response doesn't always have {data}
-  // e.g. if the request completely fails
-
-  if (err.response.data) data = err.response.data
-  if (data.error) {
-    status = data.error.status
-  }
-
-  if (status === 401) {
-    let authOptions = {
-      method: 'POST', 
-      data: qs.stringify({
-        'grant_type': 'refresh_token',
-        'refresh_token': refreshToken
-      }),
-      url: 'api/token'
-    };
-    return authRequest(authOptions).then(function(resp) {
-      if (resp.status === 200) {
-        module.exports.setTokens(resp.data)
-        ipcRenderer.invoke('update-config', {key: 'tokens', value: resp.data})
-        return resp.data
-        // api(currentRequestOptions)
-      } else {
-        // todo assume we lost user auth.
-        // show auth / start screen
-      }
-    }).catch((err) => {
-      console.log('api err - could not refresh token?', err)
-      return err
-    })
-  }  
 }
 
 async function setConfig() {
