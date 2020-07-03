@@ -21,20 +21,38 @@ const apiRequest = axios.create({
   baseURL: 'https://api.spotify.com/v1/'
 })
 
+const simRequest = axios.create({
+  baseURL: 'https://httpstat.us/'
+})
+
+simRequest.interceptors.response.use(function(config) {
+  return config
+}, async function(error) {
+  if (true) {
+    let refresh = await simRequest({url: '200'})
+    let original = axios.create({
+      baseURL: error.config.baseURL
+    })
+    return await original({url: '200'})
+  } else {
+    return error.response
+  }
+})
+
 apiRequest.interceptors.request.use(async function (config) {
-  
   if (config.headers.common['Authorization'] === undefined) {
     let tokens = await module.exports.init()
     config.headers['Authorization'] = `Bearer ${tokens.access_token}`
   }
-
   return config
 }, function (error) {
+  debugger
   return Promise.reject(error);
 });
 
 // TODO: this needs to then resend the api request
 apiRequest.interceptors.response.use(function(config) {
+  // debugger
   return config
 }, async function(error) {
   if (error.response.data.error.status === 401) {
@@ -49,7 +67,6 @@ apiRequest.interceptors.response.use(function(config) {
     let refresh = await authRequest(authOptions)
     module.exports.setTokens(refresh.data)
     ipcRenderer.invoke('update-config', {key: 'tokens', value: refresh.data})
-    // TODO resend api request here
   } else {
     return error.response
   }
