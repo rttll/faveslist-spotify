@@ -2,6 +2,7 @@
 node_modules
 
 _graphics
+config
 dist
 app/*.js
 app/*.map
