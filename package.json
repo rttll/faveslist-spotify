@@ -45,7 +45,7 @@
     "electron-store": "^5.1.1",
     "fs-jetpack": "^2.1.0",
     "preact": "^10.4.2",
-    "axios": "^0.19.2",
+    "axios": "^0.21.2",
     "qs": "^6.9.4"
   },
   "devDependencies": {
