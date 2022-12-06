@@ -46,7 +46,7 @@
     "fs-jetpack": "^2.1.0",
     "preact": "^10.4.2",
     "axios": "^0.19.2",
-    "qs": "^6.9.4"
+    "qs": "^6.9.7"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
